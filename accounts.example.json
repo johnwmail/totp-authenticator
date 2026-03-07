@@ -1,0 +1,43 @@
+// Default accounts config for Authenticator
+// Copy this file to accounts.json and edit with your real secrets.
+// On first visit (empty localStorage), the app loads accounts.json automatically.
+//
+// Comments: lines starting with // or # are stripped before parsing.
+//
+// Fields:
+//   name      - Account name / label (required)
+//   issuer    - Service provider, e.g. "GitHub" (optional, recommended)
+//   secret    - Base32-encoded TOTP secret (required)
+//   algorithm - SHA-1, SHA-256, or SHA-512 (default: SHA-1)
+//   period    - Time step in seconds: 30, 60, 300, 3600, 86400 (default: 30)
+//   digits    - Code length: 6 or 8 (default: 6)
+//   url       - Optional link shown on the account name
+[
+  {
+    "name": "user@example.com",
+    "issuer": "GitHub",
+    "secret": "4BVKJQZILWC46B2LT4CGT3ISFWZ4VYIP",
+    "algorithm": "SHA-1",
+    "period": 30,
+    "digits": 6,
+    "url": "https://github.com"
+  },
+  {
+    "name": "user@example.com",
+    "issuer": "Google",
+    "secret": "HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ",
+    "algorithm": "SHA-1",
+    "period": 30,
+    "digits": 6,
+    "url": "https://google.com"
+  },
+  {
+    "name": "user@example.com",
+    "issuer": "AWS",
+    "secret": "K3WNZXDG5JKVUZLD",
+    "algorithm": "SHA-1",
+    "period": 30,
+    "digits": 6,
+    "url": "https://aws.amazon.com"
+  }
+]

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authenticator</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" href="img/icon_60.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="img/icon_120.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="img/icon_152.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #222;
+            min-height: 100vh;
+        }
+
+        /* ---- Top bar ---- */
+        .topbar {
+            background: #1e88e5;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .topbar h1 {
+            flex: 1;
+            text-align: center;
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .topbar-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .topbar-actions button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            opacity: 0.85;
+            transition: opacity 0.15s, background 0.15s;
+        }
+        .topbar-actions button:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+        .topbar-actions button.active { opacity: 1; background: rgba(255,255,255,0.25); }
+        .topbar-actions button.hidden { display: none; }
+
+        /* ---- Account list ---- */
+        .account-list {
+            margin: 12px 16px;
+        }
+        .account-card {
+            background: #fff;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            padding: 18px 28px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: box-shadow 0.15s;
+        }
+        .account-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .account-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Code (clickable to copy) */
+        .totp-code {
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #222;
+            cursor: pointer;
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: background 0.15s;
+            user-select: all;
+            position: relative;
+        }
+        .totp-code:hover { background: #e3f2fd; }
+        .totp-code.copied {
+            background: #c8e6c9;
+        }
+        .totp-code .copy-tip {
+            position: absolute;
+            top: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            font-size: 0.7rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: 0;
+            font-weight: 400;
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .totp-code.copied .copy-tip { opacity: 1; }
+
+        /* Name row */
+        .account-meta {
+            font-size: 0.9rem;
+            color: #999;
+        }
+        .account-name {
+            font-weight: 500;
+            color: #555;
+        }
+        .account-name a {
+            color: #1e88e5;
+            text-decoration: none;
+        }
+        .account-name a:hover { text-decoration: underline; }
+        .meta-sep {
+            margin: 0 5px;
+            color: #ccc;
+        }
+        .meta-period {
+            color: #999;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .meta-extra {
+            color: #bbb;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .meta-countdown {
+            color: #bbb;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        /* Card action buttons */
+        .card-actions {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .qr-btn, .edit-btn, .delete-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .qr-btn:hover { color: #1e88e5; background: #e3f2fd; }
+        .edit-btn:hover { color: #1e88e5; background: #e3f2fd; }
+        .delete-btn { font-size: 1.4rem; }
+        .delete-btn:hover { color: #e53935; background: #ffebee; }
+
+        /* QR modal */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-modal.open { display: flex; }
+        .qr-modal-content {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            max-width: 360px;
+            width: 90%;
+        }
+        .qr-modal-content h3 {
+            margin: 0 0 16px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        .qr-modal-content canvas {
+            display: block;
+            margin: 0 auto 16px;
+        }
+        .qr-modal-content .qr-uri {
+            font-size: 0.65rem;
+            color: #999;
+            word-break: break-all;
+            margin-bottom: 16px;
+            font-family: monospace;
+        }
+        .qr-close-btn {
+            background: #eee;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 32px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #555;
+            transition: background 0.15s;
+        }
+        .qr-close-btn:hover { background: #ddd; }
+
+        /* Add button row */
+        .add-row {
+            margin: 0 16px 16px;
+        }
+        .add-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            color: #1e88e5;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .add-btn:hover { border-color: #1e88e5; background: #e3f2fd; }
+
+        /* ---- Modal overlay ---- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 14px;
+            width: 92%;
+            max-width: 420px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        .modal h2 {
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+            color: #222;
+        }
+        .modal label {
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            margin: 10px 0 4px;
+        }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #fafafa;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .modal input:focus, .modal select:focus { border-color: #1e88e5; }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions button {
+            flex: 1;
+            padding: 11px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-primary { background: #1e88e5; color: #fff; }
+        .btn-primary:hover { background: #1565c0; }
+        .btn-cancel { background: #eee; color: #555; }
+        .btn-cancel:hover { background: #ddd; }
+
+        /* ---- Responsive ---- */
+        @media (min-width: 1024px) {
+            .totp-code { font-size: 2.2rem; letter-spacing: 6px; }
+            .account-name { font-size: 1.15rem; }
+            .meta-period, .meta-countdown { font-size: 0.95rem; }
+            .account-card { padding: 20px 32px; }
+        }
+        @media (max-width: 480px) {
+            .topbar { padding: 10px 12px; }
+            .account-list { margin: 8px 8px; }
+            .add-row { margin: 0 8px 16px; }
+            .account-card { padding: 14px 16px; }
+            .totp-code { font-size: 1.5rem; letter-spacing: 3px; }
+            .modal { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top bar -->
+    <div class="topbar">
+        <h1>Authenticator</h1>
+        <div class="topbar-actions">
+            <button id="resetBtn" class="hidden" title="Reset all accounts">&#x1F5D1;</button>
+            <button id="importBtn" class="hidden" title="Import accounts">&#x21A5;</button>
+            <button id="exportBtn" class="hidden" title="Export accounts">&#x2913;</button>
+            <button id="editBtn" title="Edit accounts">&#x2699;</button>
+        </div>
+    </div>
+
+    <!-- Account list -->
+    <div class="account-list" id="accounts"></div>
+
+    <!-- Add button (edit mode) -->
+    <div class="add-row" id="addRow" style="display:none;">
+        <button class="add-btn" id="addBtn">+ Add Account</button>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFile" accept=".json,.txt" style="display:none" />
+
+    <!-- QR code modal -->
+    <div class="qr-modal" id="qrModal">
+        <div class="qr-modal-content">
+            <h3 id="qrTitle"></h3>
+            <canvas id="qrCanvas"></canvas>
+            <div class="qr-uri" id="qrUri"></div>
+            <button class="qr-close-btn" id="qrClose">Close</button>
+        </div>
+    </div>
+
+    <!-- Add/Edit modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h2 id="modalTitle">Add Account</h2>
+            <label for="keyIssuer">Issuer</label>
+            <input type="text" id="keyIssuer" placeholder="e.g. GitHub" />
+            <label for="keyAccount">Account Name *</label>
+            <input type="text" id="keyAccount" placeholder="e.g. user@example.com" />
+            <label for="keySecret">Secret (base32) *</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <input type="text" id="keySecret" placeholder="4BVKJQZILWC46B2LT4CGT3ISFWZ4VYIP" style="flex:1;" />
+                <button type="button" id="regenSecret" title="Generate random secret" style="background:none;border:1px solid #ddd;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;color:#1e88e5;transition:background 0.15s;flex-shrink:0;">&#x21BB;</button>
+            </div>
+            <label for="keyUrl">URL (optional)</label>
+            <input type="url" id="keyUrl" placeholder="https://example.com" />
+            <label for="keyAlgorithm">Algorithm</label>
+            <select id="keyAlgorithm">
+                <option value="SHA-1" selected>SHA-1</option>
+                <option value="SHA-256">SHA-256</option>
+                <option value="SHA-512">SHA-512</option>
+            </select>
+            <label for="keyPeriod">Period</label>
+            <select id="keyPeriod">
+                <option value="30" selected>30 seconds</option>
+                <option value="60">60 seconds</option>
+                <option value="300">5 minutes</option>
+                <option value="3600">1 hour</option>
+                <option value="86400">1 day</option>
+            </select>
+            <label for="keyDigits">Digits</label>
+            <select id="keyDigits">
+                <option value="6" selected>6 digits</option>
+                <option value="8">8 digits</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="addKeyCancel">Cancel</button>
+                <button class="btn-primary" id="addKeyButton">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="lib/qrcode.js?v=20"></script>
+    <script src="lib/jsSHA-3.3.1.js?v=20"></script>
+    <script src="js/totp-auth.js?v=20"></script>
+    <script>
+        (function() {
+            var keysController = new totpAuth.KeysController();
+            keysController.init();
+        })();
+    </script>
+</body>
+</html>
