@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Authenticator</title>
+    <title>TOTP Authenticator</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
@@ -28,9 +28,9 @@
             top: 0;
             z-index: 10;
         }
-        .topbar h1 {
+        .topbar-title {
             flex: 1;
-            text-align: center;
+            text-align: left;
             font-size: 1.15rem;
             font-weight: 600;
             letter-spacing: 0.5px;
@@ -38,6 +38,16 @@
             overflow: hidden;
             text-overflow: ellipsis;
             min-width: 0;
+            color: #fff;
+            text-decoration: none;
+        }
+        .topbar-title:hover { opacity: 0.85; }
+        .topbar-version {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.7);
+            font-weight: 400;
+            margin-right: 8px;
+            white-space: nowrap;
         }
         .topbar-actions {
             display: flex;
@@ -328,7 +338,8 @@
 
     <!-- Top bar -->
     <div class="topbar">
-        <h1>Authenticator</h1>
+        <a href="https://github.com/johnwmail/totp-authenticator" target="_blank" rel="noopener" class="topbar-title">TOTP Authenticator</a>
+        <span class="topbar-version" id="appVersion">vDev</span>
         <div class="topbar-actions">
             <button id="resetBtn" class="hidden" title="Reset all accounts">&#x1F5D1;</button>
             <button id="importBtn" class="hidden" title="Import accounts">&#x21A5;</button>

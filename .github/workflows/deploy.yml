@@ -18,6 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Inject version into HTML
+        run: |
+          VERSION="preview-${GITHUB_SHA::7}"
+          sed -i "s/vDev/${VERSION}/g" index.html
+          echo "Version: ${VERSION}"
+
       - name: Deploy preview to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
@@ -33,6 +39,12 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Inject version into HTML
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          sed -i "s/vDev/${VERSION}/g" index.html
+          echo "Version: ${VERSION}"
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
