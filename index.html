@@ -84,26 +84,35 @@
             z-index: 10;
             transition: background 0.3s;
         }
-        .topbar-title {
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .topbar-title {
             text-align: left;
             font-size: 1.15rem;
             font-weight: 600;
             letter-spacing: 0.5px;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            min-width: 0;
             color: #fff;
             text-decoration: none;
+            flex-shrink: 0;
         }
         .topbar-title:hover { opacity: 0.85; }
         .topbar-version {
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.7);
-            font-weight: 400;
-            margin-right: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.18);
+            padding: 2px 8px;
+            border-radius: 10px;
             white-space: nowrap;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
         }
         .topbar-actions {
             display: flex;
@@ -304,6 +313,14 @@
         }
         @media (max-width: 480px) {
             .topbar { padding: 10px 12px; }
+            .topbar-left { gap: 6px; }
+            .topbar-title {
+                font-size: 0.95rem;
+                flex-shrink: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .topbar-version { font-size: 0.6rem; padding: 2px 6px; }
             .account-list { margin: 8px 8px; }
             .add-row { margin: 0 8px 16px; }
             .account-card { padding: 14px 16px; }
@@ -316,8 +333,10 @@
 
     <!-- Top bar -->
     <div class="topbar">
-        <a href="https://github.com/johnwmail/totp-authenticator" target="_blank" rel="noopener" class="topbar-title">TOTP Authenticator</a>
-        <span class="topbar-version" id="appVersion">vDev</span>
+        <div class="topbar-left">
+            <a href="https://github.com/johnwmail/totp-authenticator" target="_blank" rel="noopener" class="topbar-title">TOTP Authenticator</a>
+            <span class="topbar-version" id="appVersion">vDev</span>
+        </div>
         <div class="topbar-actions">
             <button id="themeBtn" class="hidden" title="Toggle dark mode">🌙</button>
             <button id="lockBtn" class="hidden" title="Encryption">🔒</button>
