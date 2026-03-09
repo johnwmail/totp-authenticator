@@ -387,19 +387,22 @@
             }
         };
 
-        // ---- Theme ----
+        // ---- Theme (auto-detect by local time: 08:00–22:00 = light) ----
+        var manualTheme = null; // manual override for current session
+
+        var getTimeBasedTheme = function() {
+            var hour = new Date().getHours();
+            return (hour >= 8 && hour < 22) ? 'light' : 'dark';
+        };
+
         var toggleTheme = function() {
-            var current = localStorage.getItem('theme');
-            var next = current === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', next);
+            var current = document.documentElement.getAttribute('data-theme') || getTimeBasedTheme();
+            manualTheme = current === 'dark' ? 'light' : 'dark';
             applyTheme();
         };
 
         var applyTheme = function() {
-            var theme = localStorage.getItem('theme');
-            if (!theme) {
-                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            }
+            var theme = manualTheme || getTimeBasedTheme();
             document.documentElement.setAttribute('data-theme', theme);
             var btn = $('#themeBtn');
             if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
@@ -647,6 +650,7 @@
         var toggleEdit = function() {
             editing = !editing;
             $('#editBtn').classList.toggle('active', editing);
+            $('#themeBtn').classList.toggle('hidden', !editing);
             $('#resetBtn').classList.toggle('hidden', !editing);
             $('#importBtn').classList.toggle('hidden', !editing);
             $('#exportBtn').classList.toggle('hidden', !editing);
