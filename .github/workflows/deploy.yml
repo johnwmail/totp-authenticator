@@ -24,12 +24,20 @@ jobs:
           sed -i "s/vDev/${VERSION}/g" index.html
           echo "Version: ${VERSION}"
 
+      - name: Create Pages project if needed
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create totp --production-branch=main
+        continue-on-error: true
+
       - name: Deploy preview to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=totp --branch=${{ github.head_ref }}
+          command: pages deploy . --project-name=totp --branch=${{ github.head_ref }} --commit-dirty=true
 
   deploy-production:
     name: Deploy Production
@@ -47,9 +55,17 @@ jobs:
           sed -i "s/vDev/${VERSION}/g" index.html
           echo "Version: ${VERSION}"
 
+      - name: Create Pages project if needed
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create totp --production-branch=main
+        continue-on-error: true
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=totp --branch=main
+          command: pages deploy . --project-name=totp --branch=main --commit-dirty=true
