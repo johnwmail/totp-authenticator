@@ -275,50 +275,93 @@
     var KeysController = function() {
         var store, keys, editing = false;
         var editIndex = -1;
+        var renderToken = 0;
+        var tickTimer = null;
 
         var $ = function(sel) { return document.querySelector(sel); };
 
+        var startTicker = function() {
+            if (tickTimer) clearInterval(tickTimer);
+            tickTimer = setInterval(tick, 1000);
+        };
+
+        var stopTicker = function() {
+            if (tickTimer) clearInterval(tickTimer);
+            tickTimer = null;
+        };
+
         var addFallbackAccount = async function() {
-            await addAccount('demo@example.com', generateRandomSecret(), DEFAULTS.algorithm, DEFAULTS.period, DEFAULTS.digits, 'https://github.com', 'Github');
+            var accounts = await store.getAccounts();
+            if (accounts === null || accounts.length > 0) return;
+            await store.saveAccounts([{ 
+                name: 'demo@example.com',
+                secret: generateRandomSecret(),
+                algorithm: DEFAULTS.algorithm,
+                period: DEFAULTS.period,
+                digits: DEFAULTS.digits,
+                url: 'https://github.com',
+                issuer: 'Github'
+            }]);
+            await render();
         };
 
         var stripJsonComments = function(text) {
             return text.replace(/^\s*\/\/.*$/gm, '').replace(/^\s*#.*$/gm, '');
         };
 
-        var loadDefaultAccounts = function() {
-            fetch('accounts.json').then(function(res) {
+        var loadDefaultAccounts = async function() {
+            try {
+                var existing = await store.getAccounts();
+                if (existing === null || existing.length > 0) return;
+
+                var res = await fetch('accounts.json');
                 if (!res.ok) throw new Error('not found');
-                return res.text();
-            }).then(async function(text) {
+
+                var text = await res.text();
                 var arr = JSON.parse(stripJsonComments(text));
                 if (!arr || !Array.isArray(arr) || arr.length === 0) throw new Error('empty');
-                var imported = 0;
+
+                var imported = [];
                 for (var i = 0; i < arr.length; i++) {
                     var item = arr[i];
                     if (item.secret) {
-                        await addAccount(
-                            item.name      || 'Imported',
-                            item.secret,
-                            item.algorithm || DEFAULTS.algorithm,
-                            item.period    || DEFAULTS.period,
-                            item.digits    || DEFAULTS.digits,
-                            item.url       || '',
-                            item.issuer    || ''
-                        );
-                        imported++;
+                        imported.push({
+                            name: item.name || 'Imported',
+                            secret: item.secret,
+                            algorithm: item.algorithm || DEFAULTS.algorithm,
+                            period: item.period || DEFAULTS.period,
+                            digits: item.digits || DEFAULTS.digits,
+                            url: item.url || '',
+                            issuer: item.issuer || ''
+                        });
                     } else if (item.otpauth) {
                         var parsed = parseOtpauth(item.otpauth);
                         if (parsed) {
-                            await addAccount(parsed.name, parsed.secret, parsed.algorithm, parsed.period, parsed.digits, '', parsed.issuer);
-                            imported++;
+                            imported.push({
+                                name: parsed.name,
+                                secret: parsed.secret,
+                                algorithm: parsed.algorithm,
+                                period: parsed.period,
+                                digits: parsed.digits,
+                                url: '',
+                                issuer: parsed.issuer
+                            });
                         }
                     }
                 }
-                if (imported === 0) await addFallbackAccount();
-            }).catch(async function() {
+
+                if (imported.length === 0) {
+                    await addFallbackAccount();
+                    return;
+                }
+
+                existing = await store.getAccounts();
+                if (existing === null || existing.length > 0) return;
+                await store.saveAccounts(imported);
+                await render();
+            } catch (e) {
                 await addFallbackAccount();
-            });
+            }
         };
 
         var init = async function() {
@@ -377,13 +420,14 @@
 
             // Check encryption state
             if (store.isEncrypted()) {
+                stopTicker();
                 showLockScreen();
             } else {
                 if (!store.hasAnyData()) {
-                    loadDefaultAccounts();
+                    await loadDefaultAccounts();
                 }
                 await render();
-                setInterval(tick, 1000);
+                startTicker();
             }
         };
 
@@ -410,6 +454,7 @@
 
         // ---- Encryption UI ----
         var showLockScreen = function() {
+            stopTicker();
             $('#lockScreen').style.display = 'flex';
             $('#accounts').style.display = 'none';
             $('#addRow').style.display = 'none';
@@ -477,7 +522,7 @@
                     hideLockScreen();
                     updateLockIcon();
                     await render();
-                    setInterval(tick, 1000);
+                    startTicker();
                 } else {
                     $('#pwError').textContent = 'Wrong password';
                     $('#pwInput').select();
@@ -570,8 +615,11 @@
         // ---- Render ----
         var render = async function() {
             var list = $('#accounts');
-            list.innerHTML = '';
+            var token = ++renderToken;
             var accounts = await store.getAccounts();
+            if (token !== renderToken) return;
+
+            list.innerHTML = '';
             if (accounts === null) return; // locked
             var now = Math.round(Date.now() / 1000);
 
@@ -580,6 +628,7 @@
                 var period = acc.period    || DEFAULTS.period;
                 var digits = acc.digits    || DEFAULTS.digits;
                 var code   = await keys.generate(acc.secret, { algorithm: algo, period: period, digits: digits });
+                if (token !== renderToken) return;
                 var cd     = period - (now % period);
 
                 var card = document.createElement('div');

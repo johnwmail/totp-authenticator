@@ -188,9 +188,146 @@ async function runTests() {
     assert(totpAuth.DEFAULTS.period === 30, 'default period is 30');
     assert(totpAuth.DEFAULTS.digits === 6, 'default digits is 6');
 
+    await runRenderingRaceRegressionTest();
+
     // ---- Summary ----
     console.log(`\n=== Results: ${passed} passed, ${failed} failed ===\n`);
     process.exit(failed > 0 ? 1 : 0);
 }
 
 runTests();
+
+async function runRenderingRaceRegressionTest() {
+    console.log('rendering regression:');
+
+    const accountsListEl = {
+        _innerHTML: '',
+        children: [],
+        querySelectorAll() { return []; },
+        appendChild(node) { this.children.push(node); },
+        set innerHTML(v) { this._innerHTML = v; this.children = []; },
+        get innerHTML() { return this._innerHTML; }
+    };
+
+    function stubEl() {
+        return {
+            style: {},
+            classList: { add() {}, remove() {}, toggle() {} },
+            addEventListener() {},
+            querySelector() { return stubEl(); },
+            setAttribute() {},
+            getAttribute() { return '0'; },
+            focus() {},
+            select() {},
+            textContent: '',
+            value: ''
+        };
+    }
+
+    const elements = {
+        '#accounts': accountsListEl,
+        '#editBtn': stubEl(),
+        '#exportBtn': stubEl(),
+        '#importBtn': stubEl(),
+        '#importFile': stubEl(),
+        '#resetBtn': stubEl(),
+        '#addBtn': stubEl(),
+        '#regenSecret': stubEl(),
+        '#addKeyCancel': stubEl(),
+        '#addKeyButton': stubEl(),
+        '#addModal': stubEl(),
+        '#qrClose': stubEl(),
+        '#qrModal': stubEl(),
+        '#lockScreenUnlock': stubEl(),
+        '#lockBtn': stubEl(),
+        '#passwordModal': stubEl(),
+        '#pwCancel': stubEl(),
+        '#pwSubmit': stubEl(),
+        '#pwInput': stubEl(),
+        '#setPwModal': stubEl(),
+        '#setPwCancel': stubEl(),
+        '#setPwSubmit': stubEl(),
+        '#themeBtn': stubEl(),
+        '#lockScreen': stubEl(),
+        '#addRow': stubEl(),
+        '#pwError': stubEl(),
+        '#pwTitle': stubEl(),
+        '#setPwInput': stubEl(),
+        '#setPwConfirm': stubEl(),
+        '#setPwError': stubEl(),
+        '#setPwTitle': stubEl(),
+        '#setPwHint': stubEl(),
+        '#keyIssuer': stubEl(),
+        '#keyAccount': stubEl(),
+        '#keySecret': stubEl(),
+        '#keyUrl': stubEl(),
+        '#keyAlgorithm': stubEl(),
+        '#keyPeriod': stubEl(),
+        '#keyDigits': stubEl(),
+        '#modalTitle': stubEl()
+    };
+
+    const originalDocument = globalThis.document;
+    const originalStorage = globalThis.Storage;
+    const originalLocalStorage = globalThis.localStorage;
+    const originalFetch = globalThis.fetch;
+    const originalSetInterval = globalThis.setInterval;
+    const originalClearInterval = globalThis.clearInterval;
+
+    const store = new Map();
+    globalThis.Storage = function() {};
+    globalThis.localStorage = {
+        getItem(k) { return store.has(k) ? store.get(k) : null; },
+        setItem(k, v) { store.set(k, String(v)); },
+        removeItem(k) { store.delete(k); },
+        clear() { store.clear(); }
+    };
+
+    globalThis.document = {
+        documentElement: { setAttribute() {}, getAttribute() { return 'light'; } },
+        querySelector(sel) { return elements[sel] || stubEl(); },
+        querySelectorAll() { return []; },
+        createElement() {
+            return {
+                className: '',
+                setAttribute() {},
+                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; },
+                addEventListener() {},
+                innerHTML: ''
+            };
+        }
+    };
+
+    let resolveFetch;
+    globalThis.fetch = () => new Promise(resolve => { resolveFetch = resolve; });
+    globalThis.setInterval = () => 1;
+    globalThis.clearInterval = () => {};
+
+    try {
+        const controller = new totpAuth.KeysController();
+        const initPromise = controller.init();
+        await new Promise(r => setTimeout(r, 0));
+
+        const before = JSON.parse(globalThis.localStorage.getItem('accounts') || '[]');
+        assert(before.length === 0, 'does not partially import defaults before fetch resolves');
+
+        resolveFetch({
+            ok: true,
+            text: async () => JSON.stringify([
+                { name: 'a1', secret: 'JBSWY3DPEHPK3PXP' },
+                { name: 'a2', secret: 'JBSWY3DPEHPK3PXP' }
+            ])
+        });
+
+        await initPromise;
+        const after = JSON.parse(globalThis.localStorage.getItem('accounts') || '[]');
+        assert(after.length === 2, 'imports default accounts exactly once after fetch resolves');
+    } finally {
+        globalThis.document = originalDocument;
+        globalThis.Storage = originalStorage;
+        globalThis.localStorage = originalLocalStorage;
+        globalThis.fetch = originalFetch;
+        globalThis.setInterval = originalSetInterval;
+        globalThis.clearInterval = originalClearInterval;
+    }
+}
