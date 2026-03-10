@@ -189,6 +189,7 @@ async function runTests() {
     assert(totpAuth.DEFAULTS.digits === 6, 'default digits is 6');
 
     await runRenderingRaceRegressionTest();
+    await runTickDedupRegressionTest();
 
     // ---- Summary ----
     console.log(`\n=== Results: ${passed} passed, ${failed} failed ===\n`);
@@ -329,5 +330,170 @@ async function runRenderingRaceRegressionTest() {
         globalThis.fetch = originalFetch;
         globalThis.setInterval = originalSetInterval;
         globalThis.clearInterval = originalClearInterval;
+    }
+}
+
+async function runTickDedupRegressionTest() {
+    console.log('ticker regression:');
+
+    const originalDocument = globalThis.document;
+    const originalStorage = globalThis.Storage;
+    const originalLocalStorage = globalThis.localStorage;
+    const originalFetch = globalThis.fetch;
+    const originalSetInterval = globalThis.setInterval;
+    const originalClearInterval = globalThis.clearInterval;
+    const originalDateNow = Date.now;
+
+    function makeClassList() {
+        return { add() {}, remove() {}, toggle() {} };
+    }
+
+    function makeNode(className) {
+        return {
+            className: className || '',
+            style: {},
+            attributes: {},
+            children: [],
+            parentNode: null,
+            classList: makeClassList(),
+            textContent: '',
+            _innerHTML: '',
+            value: '',
+            addEventListener() {},
+            appendChild(child) { child.parentNode = this; this.children.push(child); },
+            setAttribute(name, value) { this.attributes[name] = String(value); },
+            getAttribute(name) { return this.attributes[name] || null; },
+            closest(selector) {
+                var node = this;
+                while (node) {
+                    if (selector === '.account-card' && node.className === 'account-card') return node;
+                    node = node.parentNode;
+                }
+                return null;
+            },
+            set innerHTML(v) { this._innerHTML = v; this.children = []; },
+            get innerHTML() { return this._innerHTML; },
+            focus() {},
+            select() {}
+        };
+    }
+
+    const accountsEl = makeNode('accounts');
+    let accountReads = 0;
+    const elements = {
+        '#accounts': accountsEl,
+        '#editBtn': makeNode(),
+        '#exportBtn': makeNode(),
+        '#importBtn': makeNode(),
+        '#importFile': makeNode(),
+        '#resetBtn': makeNode(),
+        '#addBtn': makeNode(),
+        '#regenSecret': makeNode(),
+        '#addKeyCancel': makeNode(),
+        '#addKeyButton': makeNode(),
+        '#addModal': makeNode(),
+        '#qrClose': makeNode(),
+        '#qrModal': makeNode(),
+        '#lockScreenUnlock': makeNode(),
+        '#lockBtn': makeNode(),
+        '#passwordModal': makeNode(),
+        '#pwCancel': makeNode(),
+        '#pwSubmit': makeNode(),
+        '#pwInput': makeNode(),
+        '#setPwModal': makeNode(),
+        '#setPwCancel': makeNode(),
+        '#setPwSubmit': makeNode(),
+        '#themeBtn': makeNode(),
+        '#lockScreen': makeNode(),
+        '#addRow': makeNode(),
+        '#pwError': makeNode(),
+        '#pwTitle': makeNode(),
+        '#setPwInput': makeNode(),
+        '#setPwConfirm': makeNode(),
+        '#setPwError': makeNode(),
+        '#setPwTitle': makeNode(),
+        '#setPwHint': makeNode(),
+        '#keyIssuer': makeNode(),
+        '#keyAccount': makeNode(),
+        '#keySecret': makeNode(),
+        '#keyUrl': makeNode(),
+        '#keyAlgorithm': makeNode(),
+        '#keyPeriod': makeNode(),
+        '#keyDigits': makeNode(),
+        '#modalTitle': makeNode()
+    };
+
+    var countdownNode = makeNode('meta-countdown');
+    var codeNode = makeNode('totp-code');
+    var cardNode = makeNode('account-card');
+    cardNode.setAttribute('data-period', '30');
+    cardNode.appendChild(countdownNode);
+    cardNode.appendChild(codeNode);
+    accountsEl.appendChild(cardNode);
+
+    const store = new Map();
+    store.set('accounts', JSON.stringify([{ name: 'a1', secret: 'JBSWY3DPEHPK3PXP' }]));
+
+    let tickFn = null;
+    globalThis.Storage = function() {};
+    globalThis.localStorage = {
+        getItem(k) {
+            if (k === 'accounts') accountReads++;
+            return store.has(k) ? store.get(k) : null;
+        },
+        setItem(k, v) { store.set(k, String(v)); },
+        removeItem(k) { store.delete(k); }
+    };
+
+    globalThis.document = {
+        documentElement: { setAttribute() {}, getAttribute() { return 'light'; } },
+        querySelector(sel) { return elements[sel] || makeNode(); },
+        querySelectorAll(sel) {
+            if (sel === '.meta-countdown') return [countdownNode];
+            if (sel === '.totp-code') return [codeNode];
+            return [];
+        },
+        createElement() {
+            var el = makeNode();
+            el.querySelector = function(selector) {
+                if (selector === '.totp-code' || selector === '.qr-btn' || selector === '.edit-btn' || selector === '.delete-btn') {
+                    return makeNode(selector.slice(1));
+                }
+                return makeNode();
+            };
+            return el;
+        }
+    };
+
+    globalThis.fetch = async () => ({ ok: false, text: async () => '' });
+    globalThis.setInterval = fn => { tickFn = fn; return 1; };
+    globalThis.clearInterval = () => {};
+
+    try {
+        Date.now = () => 1000;
+        const controller = new totpAuth.KeysController();
+        await controller.init();
+        const readsAfterInit = accountReads;
+
+        tickFn();
+        tickFn();
+        tickFn();
+        assert(accountReads === readsAfterInit, 'skips redundant re-renders within same second');
+
+        Date.now = () => 2100;
+        tickFn();
+        assert(accountReads === readsAfterInit, 'updates countdown without full re-render when code step is unchanged');
+
+        Date.now = () => 31000;
+        tickFn();
+        assert(accountReads > readsAfterInit, 're-renders when the TOTP code step changes');
+    } finally {
+        globalThis.document = originalDocument;
+        globalThis.Storage = originalStorage;
+        globalThis.localStorage = originalLocalStorage;
+        globalThis.fetch = originalFetch;
+        globalThis.setInterval = originalSetInterval;
+        globalThis.clearInterval = originalClearInterval;
+        Date.now = originalDateNow;
     }
 }

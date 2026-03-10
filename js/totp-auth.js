@@ -277,6 +277,8 @@
         var editIndex = -1;
         var renderToken = 0;
         var tickTimer = null;
+        var lastRenderedAt = 0;
+        var lastCodeStepByIndex = {};
 
         var $ = function(sel) { return document.querySelector(sel); };
 
@@ -614,6 +616,10 @@
 
         // ---- Render ----
         var render = async function() {
+            return renderAt(Math.round(Date.now() / 1000));
+        };
+
+        var renderAt = async function(now) {
             var list = $('#accounts');
             var token = ++renderToken;
             var accounts = await store.getAccounts();
@@ -621,7 +627,8 @@
 
             list.innerHTML = '';
             if (accounts === null) return; // locked
-            var now = Math.round(Date.now() / 1000);
+            lastRenderedAt = now;
+            lastCodeStepByIndex = {};
 
             for (var _i = 0; _i < accounts.length; _i++) { var acc = accounts[_i]; var i = _i;
                 var algo   = acc.algorithm || DEFAULTS.algorithm;
@@ -634,6 +641,8 @@
                 var card = document.createElement('div');
                 card.className = 'account-card';
                 card.setAttribute('data-idx', i);
+                card.setAttribute('data-period', period);
+                lastCodeStepByIndex[i] = Math.floor(now / period);
                 if (editing) card.setAttribute('draggable', 'true');
 
                 var displayName = acc.issuer
@@ -935,7 +944,30 @@
         };
 
         var tick = function() {
-            render();
+            var now = Math.round(Date.now() / 1000);
+            if (now === lastRenderedAt) return;
+
+            var countdowns = document.querySelectorAll('.meta-countdown');
+            var codes = document.querySelectorAll('.totp-code');
+            var needsFullRender = false;
+
+            for (var i = 0; i < countdowns.length; i++) {
+                var card = countdowns[i].closest('.account-card');
+                if (!card) continue;
+                var period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
+                var step = Math.floor(now / period);
+                var cd = period - (now % period);
+                countdowns[i].textContent = cd + 's';
+
+                if (lastCodeStepByIndex[i] !== step) {
+                    needsFullRender = true;
+                }
+            }
+
+            lastRenderedAt = now;
+            if (needsFullRender || codes.length !== countdowns.length) {
+                renderAt(now);
+            }
         };
 
         return { init: init, addAccount: addAccount, deleteAccount: deleteAccount };
