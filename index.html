@@ -4,10 +4,16 @@
     <title>TOTP Authenticator</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <link rel="apple-touch-icon" href="img/icon_60.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="img/icon_120.png">
     <link rel="apple-touch-icon" sizes="152x152" href="img/icon_152.png">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1e88e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TOTP Authenticator">
     <style>
         /* ---- Theme variables ---- */
         :root, [data-theme="light"] {
@@ -304,6 +310,30 @@
         }
         .lock-screen button:hover { background: var(--accent-hover); }
 
+        /* ---- Toast notifications ---- */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--card-bg);
+            color: var(--text);
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--card-shadow);
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
         /* ---- Responsive ---- */
         @media (min-width: 1024px) {
             .totp-code { font-size: 2.2rem; letter-spacing: 6px; }
@@ -338,12 +368,12 @@
             <span class="topbar-version" id="appVersion">vDev</span>
         </div>
         <div class="topbar-actions">
-            <button id="themeBtn" class="hidden" title="Toggle dark mode">🌙</button>
-            <button id="lockBtn" class="hidden" title="Encryption">🔒</button>
-            <button id="resetBtn" class="hidden" title="Reset all accounts">&#x1F5D1;</button>
-            <button id="importBtn" class="hidden" title="Import accounts">&#x21A5;</button>
-            <button id="exportBtn" class="hidden" title="Export accounts">&#x2913;</button>
-            <button id="editBtn" title="Edit accounts">&#x2699;</button>
+            <button id="themeBtn" class="hidden" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+            <button id="lockBtn" class="hidden" title="Encryption" aria-label="Encryption">🔒</button>
+            <button id="resetBtn" class="hidden" title="Reset all accounts" aria-label="Reset all accounts">&#x1F5D1;</button>
+            <button id="importBtn" class="hidden" title="Import accounts" aria-label="Import accounts">&#x21A5;</button>
+            <button id="exportBtn" class="hidden" title="Export accounts" aria-label="Export accounts">&#x2913;</button>
+            <button id="editBtn" title="Edit accounts" aria-label="Edit accounts">&#x2699;</button>
         </div>
     </div>
 
@@ -360,34 +390,34 @@
 
     <!-- Add button (edit mode) -->
     <div class="add-row" id="addRow" style="display:none;">
-        <button class="add-btn" id="addBtn">+ Add Account</button>
+        <button class="add-btn" id="addBtn" aria-label="Add new account">+ Add Account</button>
     </div>
 
     <!-- Hidden file input for import -->
-    <input type="file" id="importFile" accept=".json,.txt" style="display:none" />
+    <input type="file" id="importFile" accept=".json,.txt" style="display:none" aria-label="Import accounts file" />
 
     <!-- QR code modal -->
-    <div class="qr-modal" id="qrModal">
+    <div class="qr-modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
         <div class="qr-modal-content">
             <h3 id="qrTitle"></h3>
             <canvas id="qrCanvas"></canvas>
             <div class="qr-uri" id="qrUri"></div>
-            <button class="qr-close-btn" id="qrClose">Close</button>
+            <button class="qr-close-btn" id="qrClose" aria-label="Close QR code">Close</button>
         </div>
     </div>
 
     <!-- Add/Edit account modal -->
-    <div class="modal-overlay" id="addModal">
+    <div class="modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal">
             <h2 id="modalTitle">Add Account</h2>
             <label for="keyIssuer">Issuer</label>
-            <input type="text" id="keyIssuer" placeholder="e.g. GitHub" />
+            <input type="text" id="keyIssuer" placeholder="e.g. GitHub" aria-required="false" />
             <label for="keyAccount">Account Name *</label>
-            <input type="text" id="keyAccount" placeholder="e.g. user@example.com" />
+            <input type="text" id="keyAccount" placeholder="e.g. user@example.com" aria-required="true" />
             <label for="keySecret">Secret (base32) *</label>
             <div style="display:flex;gap:6px;align-items:center;">
-                <input type="text" id="keySecret" placeholder="4BVKJQZILWC46B2LT4CGT3ISFWZ4VYIP" style="flex:1;" />
-                <button type="button" id="regenSecret" title="Generate random secret" style="background:none;border:1px solid var(--input-border);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;color:var(--accent);transition:background 0.15s;flex-shrink:0;">&#x21BB;</button>
+                <input type="text" id="keySecret" placeholder="4BVKJQZILWC46B2LT4CGT3ISFWZ4VYIP" style="flex:1;" aria-required="true" />
+                <button type="button" id="regenSecret" title="Generate random secret" aria-label="Generate random secret" style="background:none;border:1px solid var(--input-border);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;color:var(--accent);transition:background 0.15s;flex-shrink:0;">&#x21BB;</button>
             </div>
             <label for="keyUrl">URL (optional)</label>
             <input type="url" id="keyUrl" placeholder="https://example.com" />
@@ -411,39 +441,39 @@
                 <option value="8">8 digits</option>
             </select>
             <div class="modal-actions">
-                <button class="btn-cancel" id="addKeyCancel">Cancel</button>
-                <button class="btn-primary" id="addKeyButton">Add</button>
+                <button class="btn-cancel" id="addKeyCancel" aria-label="Cancel adding account">Cancel</button>
+                <button class="btn-primary" id="addKeyButton" aria-label="Add account">Add</button>
             </div>
         </div>
     </div>
 
     <!-- Unlock password modal -->
-    <div class="modal-overlay" id="passwordModal">
+    <div class="modal-overlay" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
         <div class="modal">
             <h2 id="pwTitle">Unlock Accounts</h2>
             <label for="pwInput">Password</label>
-            <input type="password" id="pwInput" placeholder="Enter your password" />
-            <div class="error" id="pwError"></div>
+            <input type="password" id="pwInput" placeholder="Enter your password" aria-required="true" />
+            <div class="error" id="pwError" role="alert" aria-live="polite"></div>
             <div class="modal-actions">
-                <button class="btn-cancel" id="pwCancel">Cancel</button>
-                <button class="btn-primary" id="pwSubmit">Unlock</button>
+                <button class="btn-cancel" id="pwCancel" aria-label="Cancel unlock">Cancel</button>
+                <button class="btn-primary" id="pwSubmit" aria-label="Unlock accounts">Unlock</button>
             </div>
         </div>
     </div>
 
     <!-- Set/Change password modal -->
-    <div class="modal-overlay" id="setPwModal">
+    <div class="modal-overlay" id="setPwModal" role="dialog" aria-modal="true" aria-labelledby="setPwTitle">
         <div class="modal">
             <h2 id="setPwTitle">Set Encryption Password</h2>
             <div class="hint" id="setPwHint">Encrypts accounts in localStorage with AES-GCM.</div>
             <label for="setPwInput">New Password</label>
-            <input type="password" id="setPwInput" placeholder="Enter password" />
+            <input type="password" id="setPwInput" placeholder="Enter password" aria-required="true" />
             <label for="setPwConfirm">Confirm Password</label>
-            <input type="password" id="setPwConfirm" placeholder="Confirm password" />
-            <div class="error" id="setPwError"></div>
+            <input type="password" id="setPwConfirm" placeholder="Confirm password" aria-required="true" />
+            <div class="error" id="setPwError" role="alert" aria-live="polite"></div>
             <div class="modal-actions">
-                <button class="btn-cancel" id="setPwCancel">Cancel</button>
-                <button class="btn-primary" id="setPwSubmit">Set Password</button>
+                <button class="btn-cancel" id="setPwCancel" aria-label="Cancel setting password">Cancel</button>
+                <button class="btn-primary" id="setPwSubmit" aria-label="Set encryption password">Set Password</button>
             </div>
         </div>
     </div>
@@ -458,6 +488,19 @@
             var keysController = new totpAuth.KeysController();
             keysController.init();
         })();
+
+        // Register service worker for PWA support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful:', registration.scope);
+                    })
+                    .catch(function(err) {
+                        console.log('ServiceWorker registration failed:', err);
+                    });
+            });
+        }
     </script>
 </body>
 </html>

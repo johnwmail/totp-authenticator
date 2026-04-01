@@ -1,0 +1,25 @@
+{
+  "name": "totp-authenticator",
+  "version": "0.0.4",
+  "description": "A lightweight, self-hosted TOTP authenticator that runs entirely in the browser",
+  "scripts": {
+    "lint": "eslint js/*.js",
+    "lint:fix": "eslint js/*.js --fix",
+    "format": "prettier --write 'js/*.js' 'index.html'",
+    "format:check": "prettier --check 'js/*.js' 'index.html'",
+    "test": "node test/totp.test.js"
+  },
+  "keywords": [
+    "totp",
+    "2fa",
+    "authenticator",
+    "otp",
+    "google-authenticator"
+  ],
+  "author": "",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.2.5"
+  }
+}

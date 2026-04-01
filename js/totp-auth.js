@@ -231,7 +231,36 @@
         navigator.clipboard.writeText(text).then(function() {
             el.classList.add('copied');
             setTimeout(function() { el.classList.remove('copied'); }, 1200);
+            // Clear clipboard after 30 seconds for security
+            setTimeout(function() {
+                navigator.clipboard.writeText('').then(function() {
+                    showToast('Clipboard cleared');
+                }).catch(function() {
+                    // Silent fail - clipboard API may be unavailable
+                });
+            }, 30000);
         });
+    }
+
+    function showToast(message) {
+        // Remove existing toast if any
+        var existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        // Create toast element
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        // Trigger reflow for animation
+        void toast.offsetWidth;
+        toast.classList.add('show');
+        // Auto-remove after 2 seconds
+        setTimeout(function() {
+            toast.classList.remove('show');
+            setTimeout(function() { toast.remove(); }, 300);
+        }, 2000);
     }
 
     // Parse otpauth:// URI
