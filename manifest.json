@@ -13,22 +13,32 @@
       "src": "img/icon_128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "img/icon_192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "img/icon_512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["utilities", "security"],
+  "screenshots": [
+    {
+      "src": "img/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TOTP Authenticator Desktop View"
+    },
+    {
+      "src": "img/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "TOTP Authenticator Mobile View"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Open Authenticator",
