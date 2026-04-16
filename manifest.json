@@ -23,22 +23,6 @@
     }
   ],
   "categories": ["utilities", "security"],
-  "screenshots": [
-    {
-      "src": "img/screenshot-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "TOTP Authenticator Desktop View"
-    },
-    {
-      "src": "img/screenshot-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "TOTP Authenticator Mobile View"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Open Authenticator",
