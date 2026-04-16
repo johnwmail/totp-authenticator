@@ -3,11 +3,11 @@
  * Enables offline support and PWA installation
  */
 
-var CACHE_NAME = 'totp-authenticator-v3';
+var CACHE_NAME = 'totp-authenticator-v4';
 var APP_SHELL_URL = './';
-var VERSIONED_ASSETS = [
-  './lib/qrcode.js?v=21',
-  './js/totp-auth.js?v=21',
+var APP_SHELL_ASSETS = [
+  './lib/qrcode.js',
+  './js/totp-auth.js',
   './manifest.json',
   './favicon.ico',
   './img/icon_128.png',
@@ -40,10 +40,10 @@ function getCacheKey(url) {
     return APP_SHELL_URL;
   }
   if (url.pathname === '/js/totp-auth.js') {
-    return './js/totp-auth.js?v=21';
+    return './js/totp-auth.js';
   }
   if (url.pathname === '/lib/qrcode.js') {
-    return './lib/qrcode.js?v=21';
+    return './lib/qrcode.js';
   }
   return '.' + url.pathname;
 }
@@ -57,14 +57,14 @@ self.addEventListener('install', function(event) {
           return cacheAliases(cache, APP_SHELL_URL, ['./index.html']);
         })
         .then(function() {
-          return Promise.all(VERSIONED_ASSETS.map(function(asset) {
+          return Promise.all(APP_SHELL_ASSETS.map(function(asset) {
             return fetchAndCache(cache, asset, asset);
           }));
         })
         .then(function() {
           return Promise.all([
-            cacheAliases(cache, './js/totp-auth.js?v=21', ['./js/totp-auth.js']),
-            cacheAliases(cache, './lib/qrcode.js?v=21', ['./lib/qrcode.js'])
+            cacheAliases(cache, './js/totp-auth.js', ['./js/totp-auth.js?v=21']),
+            cacheAliases(cache, './lib/qrcode.js', ['./lib/qrcode.js?v=21'])
           ]);
         });
     })
