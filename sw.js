@@ -3,12 +3,11 @@
  * Enables offline support and PWA installation
  */
 
-var CACHE_NAME = 'totp-authenticator-v1';
+var CACHE_NAME = 'totp-authenticator-v2';
 var urlsToCache = [
   './',
-  './index.html',
-  './js/totp-auth.js',
-  './lib/qrcode.js',
+  './lib/qrcode.js?v=21',
+  './js/totp-auth.js?v=21',
   './manifest.json',
   './favicon.ico',
   './img/icon_128.png',
@@ -62,8 +61,27 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(function(response) {
+          if (response && response.status === 200) {
+            var responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put('./', responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(function() {
+          return caches.match('./');
+        })
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
+    caches.match(event.request, { ignoreSearch: true })
       .then(function(response) {
         // Cache hit - return response
         if (response) {
