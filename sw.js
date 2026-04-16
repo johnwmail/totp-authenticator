@@ -3,9 +3,9 @@
  * Enables offline support and PWA installation
  */
 
-var CACHE_NAME = 'totp-authenticator-v2';
-var urlsToCache = [
-  './',
+var CACHE_NAME = 'totp-authenticator-v3';
+var APP_SHELL_URL = './';
+var VERSIONED_ASSETS = [
   './lib/qrcode.js?v=21',
   './js/totp-auth.js?v=21',
   './manifest.json',
@@ -14,17 +14,60 @@ var urlsToCache = [
   './img/icon_512.png'
 ];
 
+function fetchAndCache(cache, request, cacheKey) {
+  return fetch(request).then(function(response) {
+    if (!response || response.status !== 200) {
+      throw new Error('Failed to fetch ' + request);
+    }
+    return cache.put(cacheKey || request, response.clone());
+  });
+}
+
+function cacheAliases(cache, sourceKey, aliasKeys) {
+  return cache.match(sourceKey).then(function(response) {
+    if (!response) {
+      throw new Error('Missing cached asset ' + sourceKey);
+    }
+
+    return Promise.all(aliasKeys.map(function(aliasKey) {
+      return cache.put(aliasKey, response.clone());
+    }));
+  });
+}
+
+function getCacheKey(url) {
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    return APP_SHELL_URL;
+  }
+  if (url.pathname === '/js/totp-auth.js') {
+    return './js/totp-auth.js?v=21';
+  }
+  if (url.pathname === '/lib/qrcode.js') {
+    return './lib/qrcode.js?v=21';
+  }
+  return '.' + url.pathname;
+}
+
 // Install event - cache assets
 self.addEventListener('install', function(event) {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-      .catch(function(err) {
-        console.log('Cache install error:', err);
-      })
+    caches.open(CACHE_NAME).then(function(cache) {
+      return fetchAndCache(cache, APP_SHELL_URL, APP_SHELL_URL)
+        .then(function() {
+          return cacheAliases(cache, APP_SHELL_URL, ['./index.html']);
+        })
+        .then(function() {
+          return Promise.all(VERSIONED_ASSETS.map(function(asset) {
+            return fetchAndCache(cache, asset, asset);
+          }));
+        })
+        .then(function() {
+          return Promise.all([
+            cacheAliases(cache, './js/totp-auth.js?v=21', ['./js/totp-auth.js']),
+            cacheAliases(cache, './lib/qrcode.js?v=21', ['./lib/qrcode.js'])
+          ]);
+        });
+    })
   );
   // Force activation
   self.skipWaiting();
@@ -42,10 +85,10 @@ self.addEventListener('activate', function(event) {
           }
         })
       );
+    }).then(function() {
+      return self.clients.claim();
     })
   );
-  // Claim all clients
-  self.clients.claim();
 });
 
 // Fetch event - serve from cache, fallback to network
@@ -68,20 +111,21 @@ self.addEventListener('fetch', function(event) {
           if (response && response.status === 200) {
             var responseToCache = response.clone();
             caches.open(CACHE_NAME).then(function(cache) {
-              cache.put('./', responseToCache);
+              cache.put(APP_SHELL_URL, responseToCache);
+              cache.put('./index.html', response.clone());
             });
           }
           return response;
         })
         .catch(function() {
-          return caches.match('./');
+          return caches.match(APP_SHELL_URL);
         })
     );
     return;
   }
 
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true })
+    caches.match(getCacheKey(requestUrl))
       .then(function(response) {
         // Cache hit - return response
         if (response) {
@@ -97,10 +141,11 @@ self.addEventListener('fetch', function(event) {
 
           // Clone the response
           var responseToCache = response.clone();
+          var cacheKey = getCacheKey(requestUrl);
 
           caches.open(CACHE_NAME)
             .then(function(cache) {
-              cache.put(event.request, responseToCache);
+              cache.put(cacheKey, responseToCache);
             });
 
           return response;
@@ -108,7 +153,7 @@ self.addEventListener('fetch', function(event) {
       })
       .catch(function(err) {
         console.log('Fetch error:', err);
-        // Could return a custom offline page here
+        return caches.match(getCacheKey(requestUrl));
       })
   );
 });

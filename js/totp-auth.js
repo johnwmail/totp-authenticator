@@ -300,6 +300,10 @@
 
     exports.parseOtpauth = parseOtpauth;
 
+    function looksLikeHtmlDocument(text) {
+        return /^\s*<(?:!doctype|html)\b/i.test(text);
+    }
+
     // ---- Controller ----
     var KeysController = function() {
         var store, keys, editing = false;
@@ -345,10 +349,16 @@
                 var existing = await store.getAccounts();
                 if (existing === null || existing.length > 0) return;
 
+                if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                    await addFallbackAccount();
+                    return;
+                }
+
                 var res = await fetch('accounts.json');
                 if (!res.ok) throw new Error('not found');
 
                 var text = await res.text();
+                if (looksLikeHtmlDocument(text)) throw new Error('not json');
                 var arr = JSON.parse(stripJsonComments(text));
                 if (!arr || !Array.isArray(arr) || arr.length === 0) throw new Error('empty');
 
