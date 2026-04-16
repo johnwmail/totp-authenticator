@@ -4,7 +4,7 @@
     <title>TOTP Authenticator</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self';">
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <link rel="apple-touch-icon" href="img/icon_60.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="img/icon_120.png">
@@ -480,27 +480,6 @@
 
     <script src="lib/qrcode.js"></script>
     <script src="js/totp-auth.js"></script>
-    <script>
-        (function() {
-            // Wire up lock screen unlock button
-            // lockScreenUnlock is handled inside totp-auth.js init()
-
-            var keysController = new totpAuth.KeysController();
-            keysController.init();
-        })();
-
-        // Register service worker for PWA support
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(function(registration) {
-                        console.log('ServiceWorker registration successful:', registration.scope);
-                    })
-                    .catch(function(err) {
-                        console.log('ServiceWorker registration failed:', err);
-                    });
-            });
-        }
-    </script>
+    <script src="js/app-init.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
  * Enables offline support and PWA installation
  */
 
-var CACHE_NAME = 'totp-authenticator-v5';
+var CACHE_NAME = 'totp-authenticator-v6';
 
 function absoluteUrl(path) {
   return new URL(path, self.registration.scope).toString();
@@ -13,11 +13,13 @@ var APP_SHELL_URL = absoluteUrl('./');
 var INDEX_URL = absoluteUrl('./index.html');
 var SCRIPT_URL = absoluteUrl('./js/totp-auth.js');
 var SCRIPT_LEGACY_URL = absoluteUrl('./js/totp-auth.js?v=21');
+var APP_INIT_URL = absoluteUrl('./js/app-init.js');
 var QR_URL = absoluteUrl('./lib/qrcode.js');
 var QR_LEGACY_URL = absoluteUrl('./lib/qrcode.js?v=21');
 var APP_SHELL_ASSETS = [
   QR_URL,
   SCRIPT_URL,
+  APP_INIT_URL,
   absoluteUrl('./manifest.json'),
   absoluteUrl('./favicon.ico'),
   absoluteUrl('./img/icon_128.png'),
@@ -120,15 +122,25 @@ self.addEventListener('fetch', function(event) {
         .then(function(response) {
           if (response && response.status === 200) {
             var responseToCache = response.clone();
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(APP_SHELL_URL, responseToCache);
-              cache.put(INDEX_URL, response.clone());
-            });
+            event.waitUntil(
+              caches.open(CACHE_NAME).then(function(cache) {
+                return Promise.all([
+                  cache.put(APP_SHELL_URL, responseToCache),
+                  cache.put(INDEX_URL, response.clone())
+                ]);
+              })
+            );
           }
           return response;
         })
         .catch(function() {
-          return caches.match(APP_SHELL_URL);
+          return caches.match(APP_SHELL_URL).then(function(cachedResponse) {
+            return cachedResponse || new Response('Service unavailable', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          });
         })
     );
     return;
@@ -153,17 +165,24 @@ self.addEventListener('fetch', function(event) {
           var responseToCache = response.clone();
           var cacheKey = getCacheKey(requestUrl);
 
-          caches.open(CACHE_NAME)
-            .then(function(cache) {
-              cache.put(cacheKey, responseToCache);
-            });
+          event.waitUntil(
+            caches.open(CACHE_NAME).then(function(cache) {
+              return cache.put(cacheKey, responseToCache);
+            })
+          );
 
           return response;
         });
       })
       .catch(function(err) {
         console.log('Fetch error:', err);
-        return caches.match(getCacheKey(requestUrl));
+        return caches.match(getCacheKey(requestUrl)).then(function(cachedResponse) {
+          return cachedResponse || new Response('Service unavailable', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        });
       })
   );
 });

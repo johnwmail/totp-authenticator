@@ -6,10 +6,10 @@ This document catalogs potential enhancements for the TOTP Authenticator project
 
 ## 🎯 Project Philosophy
 
-**The app runs entirely client-side with no authentication barriers.**
+**The app runs entirely client-side with no required accounts or server-side authentication.**
 
 Design principles:
-- **No passwords** - Users who want encryption can use browser's password manager or device encryption
+- **No required passwords** - Any encryption password is optional and stays local to the browser
 - **No login required** - Open and use immediately
 - **No server-side code** - Everything runs in the browser
 - **Self-hosted** - You control your data

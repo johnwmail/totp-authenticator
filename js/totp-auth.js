@@ -227,16 +227,30 @@
         return secret;
     }
 
+    var clipboardClearTimer = null;
+    var lastCopiedValue = null;
+
     function copyToClipboard(text, el) {
         navigator.clipboard.writeText(text).then(function() {
             el.classList.add('copied');
             setTimeout(function() { el.classList.remove('copied'); }, 1200);
-            // Clear clipboard after 30 seconds for security
-            setTimeout(function() {
-                navigator.clipboard.writeText('').then(function() {
-                    showToast('Clipboard cleared');
+            lastCopiedValue = text;
+            if (clipboardClearTimer) {
+                clearTimeout(clipboardClearTimer);
+            }
+            // Clear clipboard after 30 seconds for security (only if value is unchanged)
+            clipboardClearTimer = setTimeout(function() {
+                if (!navigator.clipboard.readText) return;
+                navigator.clipboard.readText().then(function(currentValue) {
+                    if (currentValue === lastCopiedValue) {
+                        navigator.clipboard.writeText('').then(function() {
+                            showToast('Clipboard cleared');
+                        }).catch(function() {
+                            // Silent fail - clipboard API may be unavailable
+                        });
+                    }
                 }).catch(function() {
-                    // Silent fail - clipboard API may be unavailable
+                    // Silent fail - clipboard read may be unavailable
                 });
             }, 30000);
         });
@@ -251,6 +265,9 @@
         // Create toast element
         var toast = document.createElement('div');
         toast.className = 'toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.setAttribute('aria-atomic', 'true');
         toast.textContent = message;
         document.body.appendChild(toast);
         // Trigger reflow for animation
@@ -839,9 +856,9 @@
                     }
                 }
                 if (imported > 0) {
-                    alert('Imported ' + imported + ' account' + (imported > 1 ? 's' : '') + '.');
+                    showToast('Imported ' + imported + ' account' + (imported > 1 ? 's' : '') + '.');
                 } else {
-                    alert('No valid accounts found in file.');
+                    showToast('No valid accounts found in file.');
                 }
                 e.target.value = '';
             };
