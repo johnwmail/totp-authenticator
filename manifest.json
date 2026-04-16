@@ -2,7 +2,8 @@
   "name": "TOTP Authenticator",
   "short_name": "TOTP",
   "description": "A lightweight, self-hosted TOTP authenticator that runs entirely in the browser",
-  "start_url": "./index.html",
+  "id": "./",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f5f5",
@@ -28,7 +29,7 @@
       "name": "Open Authenticator",
       "short_name": "Open",
       "description": "Open TOTP Authenticator",
-      "url": "./index.html",
+      "url": "./",
       "icons": [{ "src": "img/icon_128.png", "sizes": "128x128" }]
     }
   ]
