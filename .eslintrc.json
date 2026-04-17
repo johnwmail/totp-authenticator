@@ -1,0 +1,28 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "es2021": true,
+        "node": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "rules": {
+        "indent": ["warn", 4],
+        "linebreak-style": ["warn", "unix"],
+        "quotes": ["warn", "double"],
+        "semi": ["warn", "never"],
+        "no-var": "warn",
+        "prefer-const": "warn",
+        "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+        "no-console": "off",
+        "eqeqeq": ["error", "always"],
+        "curly": ["warn", "all"],
+        "dot-notation": "warn",
+        "no-shadow": "warn",
+        "no-use-before-define": ["warn", { "functions": false, "classes": false }]
+    },
+    "ignorePatterns": ["lib/", "test/"]
+}
