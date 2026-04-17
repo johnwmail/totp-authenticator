@@ -1,4 +1,4 @@
-const CACHE_NAME = 'totp-authenticator-v7';
+const CACHE_NAME = 'totp-authenticator-v8';
 
 const APP_SHELL_ASSETS = [
     './',
@@ -13,7 +13,8 @@ const APP_SHELL_ASSETS = [
     './img/icon_60.png',
     './img/icon_120.png',
     './img/icon_152.png',
-    './img/icon_256.png'
+    './img/icon_256.png',
+    './accounts.example.json'
 ];
 
 self.addEventListener('install', event => {

@@ -22,44 +22,53 @@ Design principles:
 
 ### 1. Content Security Policy (CSP)
 
-**Priority:** 🔴 High | **Effort:** Low
+**Priority:** ✅ Completed | **Effort:** Low
 
-**Problem:** No CSP headers are defined, leaving the app vulnerable to XSS attacks.
+**Status:** Implemented with `worker-src 'self'` directive.
 
-**Solution:** Add `<meta http-equiv="Content-Security-Policy">` in `<head>`:
+**Implemented:**
 
 ```html
 <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com;"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; worker-src 'self';"
 />
 ```
 
-**Note:** Requires moving inline JavaScript to external files for full CSP compliance.
-
 **Benefits:**
 
-- Prevents XSS attacks
-- Blocks malicious script injection
-- Defense in depth for an app handling authentication secrets
+- ✅ Prevents XSS attacks
+- ✅ Blocks malicious script injection
+- ✅ Defense in depth for an app handling authentication secrets
+- ✅ Supports service worker registration
 
 ---
 
-### 2. Clipboard Auto-Clear
+### 2. XSS Protection - HTML Escaping
 
-**Priority:** 🟡 Medium | **Effort:** Low
+**Priority:** ✅ Completed | **Effort:** Low
 
-**Problem:** Codes copied to clipboard persist indefinitely in system clipboard.
+**Status:** Added `escapeHtml()` helper function for all user-controlled data rendered in HTML.
 
-**Solution:**
+**Implementation:**
 
-- Clear clipboard after **30 seconds**
-- Show brief inline notification: "Clipboard cleared"
+- All account names, issuers, and URLs are escaped before rendering
+- Prevents stored XSS via malicious import files
 
-**Benefits:**
+---
 
-- Reduces credential exposure
-- Security best practice
+### 3. Clipboard Auto-Clear
+
+**Priority:** ✅ Completed | **Effort:** Low
+
+**Status:** Implemented with user feedback for all scenarios.
+
+**Implementation:**
+
+- Clear clipboard after **30 seconds** if value unchanged
+- Shows "Clipboard cleared" on success
+- Shows "Clipboard auto-clear unavailable" when API unavailable
+- Shows "Clipboard clear attempted" when clearing fails
 
 ---
 
@@ -346,13 +355,14 @@ Add `MIGRATION.md` with:
 
 | Priority | Feature              | Effort | Impact | Quarter   |
 | -------- | -------------------- | ------ | ------ | --------- |
-| 🔴       | CSP headers          | Low    | High   | Q1        |
+| ✅       | CSP headers          | Low    | High   | Q1 (Done) |
 | ✅       | PWA support          | Medium | High   | Q1 (Done) |
-| 🟡       | Clipboard auto-clear | Low    | Medium | Q1        |
+| ✅       | Clipboard auto-clear | Low    | Medium | Q1 (Done) |
+| ✅       | XSS protection       | Low    | High   | Q1 (Done) |
 | 🟡       | ES Modules           | Medium | Medium | Q2        |
 | 🟡       | Accessibility        | Medium | Medium | Q2        |
 | 🟡       | Test coverage        | Medium | Medium | Q2        |
-| 🟡       | Linting/Formatting   | Low    | Medium | Q2        |
+| ✅       | Linting/Formatting   | Low    | Medium | Q2 (Done) |
 | 🟡       | Migration guide      | Low    | Medium | Q2        |
 | 🟢       | Lazy QR loading      | Low    | Low    | Q3        |
 | 🟢       | Virtual scrolling    | Medium | Low    | Q3        |
@@ -361,11 +371,11 @@ Add `MIGRATION.md` with:
 
 ---
 
-## 🎯 Quick Wins (1 day each)
+## 🎯 Completed (Q1 2026)
 
-1. **CSP headers** - Add meta tag to `index.html`
-2. **Clipboard auto-clear** - Add 30s timeout after copy
-3. **Linting** - Add ESLint + Prettier configs
+1. ✅ **CSP headers** - Added with `worker-src` for service worker support
+2. ✅ **Clipboard auto-clear** - 30s timeout with user feedback
+3. ✅ **Linting** - ESLint + Prettier configured (existing code compatible)
 
 ---
 

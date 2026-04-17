@@ -2,8 +2,8 @@
 // Uses native Web Crypto API (no external dependencies for crypto)
 // Based on original work by Gerard Braad (GPL-3.0)
 
-(function(exports) {
-    "use strict";
+(function (exports) {
+    'use strict';
 
     var DEFAULTS = {
         algorithm: 'SHA-1',
@@ -11,8 +11,15 @@
         digits: 6
     };
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
     // ---- Storage with optional AES-GCM encryption ----
-    var StorageService = function() {
+    var StorageService = function () {
         var KEYS = {
             plain: 'accounts',
             encrypted: 'accounts_encrypted',
@@ -20,22 +27,50 @@
         };
         var aesKey = null; // derived CryptoKey when unlocked
 
-        function isSupported() { return typeof Storage !== 'undefined'; }
+        function isSupported() {
+            return typeof Storage !== 'undefined';
+        }
 
-        function getPlain(k) { var v = localStorage.getItem(k); return v && JSON.parse(v); }
-        function setPlain(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+        function getPlain(k) {
+            var v = localStorage.getItem(k);
+            return v && JSON.parse(v);
+        }
+        function setPlain(k, v) {
+            localStorage.setItem(k, JSON.stringify(v));
+        }
 
-        function isEncrypted() { return !!localStorage.getItem(KEYS.meta); }
-        function isUnlocked() { return !!aesKey; }
+        function isEncrypted() {
+            return !!localStorage.getItem(KEYS.meta);
+        }
+        function isUnlocked() {
+            return !!aesKey;
+        }
 
-        function randomBytes(n) { var b = new Uint8Array(n); crypto.getRandomValues(b); return b; }
-        function bufToBase64(buf) { return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
-        function base64ToBuf(b64) { var s = atob(b64); var b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+        function randomBytes(n) {
+            var b = new Uint8Array(n);
+            crypto.getRandomValues(b);
+            return b;
+        }
+        function bufToBase64(buf) {
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+        }
+        function base64ToBuf(b64) {
+            var s = atob(b64);
+            var b = new Uint8Array(s.length);
+            for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+            return b;
+        }
 
         async function deriveKey(password, salt, iterations) {
             iterations = iterations || 310000;
             var enc = new TextEncoder();
-            var baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+            var baseKey = await crypto.subtle.importKey(
+                'raw',
+                enc.encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
             return crypto.subtle.deriveKey(
                 { name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
                 baseKey,
@@ -48,7 +83,11 @@
         async function encrypt(data, key) {
             var iv = randomBytes(12);
             var enc = new TextEncoder();
-            var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(JSON.stringify(data)));
+            var ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(JSON.stringify(data))
+            );
             return { iv: bufToBase64(iv), ct: bufToBase64(ct) };
         }
 
@@ -87,16 +126,21 @@
             try {
                 var key = await deriveKey(password, salt, meta.iter);
                 var payloadStr = localStorage.getItem(KEYS.encrypted);
-                if (!payloadStr) { aesKey = key; return true; }
+                if (!payloadStr) {
+                    aesKey = key;
+                    return true;
+                }
                 await decrypt(JSON.parse(payloadStr), key); // test decrypt
                 aesKey = key;
                 return true;
-            } catch(e) {
+            } catch (e) {
                 return false;
             }
         }
 
-        function lock() { aesKey = null; }
+        function lock() {
+            aesKey = null;
+        }
 
         async function getAccounts() {
             if (isEncrypted()) {
@@ -105,7 +149,7 @@
                 if (!payloadStr) return [];
                 try {
                     return await decrypt(JSON.parse(payloadStr), aesKey);
-                } catch(e) {
+                } catch (e) {
                     return null;
                 }
             }
@@ -151,15 +195,21 @@
     };
 
     // ---- TOTP (native Web Crypto API) ----
-    var KeyUtilities = function() {
-        var dec2hex = function(s) { return (s < 15.5 ? '0' : '') + Math.round(s).toString(16); };
-        var hex2dec = function(s) { return parseInt(s, 16); };
-        var leftpad = function(str, len, pad) {
+    var KeyUtilities = function () {
+        var dec2hex = function (s) {
+            return (s < 15.5 ? '0' : '') + Math.round(s).toString(16);
+        };
+        var hex2dec = function (s) {
+            return parseInt(s, 16);
+        };
+        var leftpad = function (str, len, pad) {
             if (len + 1 >= str.length) str = new Array(len + 1 - str.length).join(pad) + str;
             return str;
         };
-        var base32tohex = function(b32) {
-            var c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', bits = '', hex = '';
+        var base32tohex = function (b32) {
+            var c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
+                bits = '',
+                hex = '';
             for (var i = 0; i < b32.length; i++) {
                 var v = c.indexOf(b32.charAt(i).toUpperCase());
                 if (v >= 0) bits += leftpad(v.toString(2), 5, '0');
@@ -168,29 +218,32 @@
                 hex += parseInt(bits.substr(j, 4), 2).toString(16);
             return hex;
         };
-        var hexToUint8Array = function(hex) {
+        var hexToUint8Array = function (hex) {
             var bytes = new Uint8Array(hex.length / 2);
-            for (var i = 0; i < hex.length; i += 2)
-                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            for (var i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
             return bytes;
         };
 
         return {
-            generate: async function(secret, opts) {
+            generate: async function (secret, opts) {
                 opts = opts || {};
-                var algo   = opts.algorithm || DEFAULTS.algorithm;
-                var period = opts.period    || DEFAULTS.period;
-                var digits = opts.digits    || DEFAULTS.digits;
+                var algo = opts.algorithm || DEFAULTS.algorithm;
+                var period = opts.period || DEFAULTS.period;
+                var digits = opts.digits || DEFAULTS.digits;
                 var key = base32tohex(secret);
                 if (key.length % 2 !== 0) key += '0';
                 var epoch = opts.epoch || Math.round(Date.now() / 1000);
                 var time = leftpad(dec2hex(Math.floor(epoch / period)), 16, '0');
 
-                var keyBytes  = hexToUint8Array(key);
+                var keyBytes = hexToUint8Array(key);
                 var timeBytes = hexToUint8Array(time);
 
                 var cryptoKey = await crypto.subtle.importKey(
-                    'raw', keyBytes, { name: 'HMAC', hash: { name: algo } }, false, ['sign']
+                    'raw',
+                    keyBytes,
+                    { name: 'HMAC', hash: { name: algo } },
+                    false,
+                    ['sign']
                 );
                 var sig = await crypto.subtle.sign('HMAC', cryptoKey, timeBytes);
                 var hmacBytes = new Uint8Array(sig);
@@ -208,12 +261,14 @@
 
     // ---- Helpers ----
     function periodLabel(p) {
-        if (p >= 86400) return (p / 86400) + 'd';
-        if (p >= 3600)  return (p / 3600) + 'h';
-        if (p >= 60)    return (p / 60) + 'm';
+        if (p >= 86400) return p / 86400 + 'd';
+        if (p >= 3600) return p / 3600 + 'h';
+        if (p >= 60) return p / 60 + 'm';
         return p + 's';
     }
-    function algoLabel(a) { return a.replace('SHA-', 'S'); }
+    function algoLabel(a) {
+        return a.replace('SHA-', 'S');
+    }
 
     function generateRandomSecret(length) {
         length = length || 32;
@@ -231,27 +286,38 @@
     var lastCopiedValue = null;
 
     function copyToClipboard(text, el) {
-        navigator.clipboard.writeText(text).then(function() {
+        navigator.clipboard.writeText(text).then(function () {
             el.classList.add('copied');
-            setTimeout(function() { el.classList.remove('copied'); }, 1200);
+            setTimeout(function () {
+                el.classList.remove('copied');
+            }, 1200);
             lastCopiedValue = text;
             if (clipboardClearTimer) {
                 clearTimeout(clipboardClearTimer);
             }
             // Clear clipboard after 30 seconds for security (only if value is unchanged)
-            clipboardClearTimer = setTimeout(function() {
-                if (!navigator.clipboard.readText) return;
-                navigator.clipboard.readText().then(function(currentValue) {
-                    if (currentValue === lastCopiedValue) {
-                        navigator.clipboard.writeText('').then(function() {
-                            showToast('Clipboard cleared');
-                        }).catch(function() {
-                            // Silent fail - clipboard API may be unavailable
-                        });
-                    }
-                }).catch(function() {
-                    // Silent fail - clipboard read may be unavailable
-                });
+            clipboardClearTimer = setTimeout(function () {
+                if (!navigator.clipboard.readText) {
+                    showToast('Clipboard auto-clear unavailable');
+                    return;
+                }
+                navigator.clipboard
+                    .readText()
+                    .then(function (currentValue) {
+                        if (currentValue === lastCopiedValue) {
+                            navigator.clipboard
+                                .writeText('')
+                                .then(function () {
+                                    showToast('Clipboard cleared');
+                                })
+                                .catch(function () {
+                                    showToast('Clipboard clear attempted');
+                                });
+                        }
+                    })
+                    .catch(function () {
+                        showToast('Clipboard auto-clear unavailable');
+                    });
             }, 30000);
         });
     }
@@ -274,9 +340,11 @@
         void toast.offsetWidth;
         toast.classList.add('show');
         // Auto-remove after 2 seconds
-        setTimeout(function() {
+        setTimeout(function () {
             toast.classList.remove('show');
-            setTimeout(function() { toast.remove(); }, 300);
+            setTimeout(function () {
+                toast.remove();
+            }, 300);
         }, 2000);
     }
 
@@ -287,7 +355,10 @@
         try {
             var url = new URL(uri);
             var path = decodeURIComponent(url.pathname);
-            var name = path.replace(/^\/totp\//, '').replace(/^\/hotp\//, '').replace(/^\//, '');
+            var name = path
+                .replace(/^\/totp\//, '')
+                .replace(/^\/hotp\//, '')
+                .replace(/^\//, '');
             var issuer = url.searchParams.get('issuer');
             if (issuer && name.indexOf(issuer + ':') === 0) {
                 name = issuer + ' (' + name.substring(issuer.length + 1).trim() + ')';
@@ -295,9 +366,11 @@
                 name = issuer + ' (' + name + ')';
             }
             var secret = (url.searchParams.get('secret') || '').toUpperCase().replace(/\s/g, '');
-            var algoParam = (url.searchParams.get('algorithm') || '').toUpperCase().replace('-', '');
+            var algoParam = (url.searchParams.get('algorithm') || '')
+                .toUpperCase()
+                .replace('-', '');
             var algorithm = DEFAULTS.algorithm;
-            if (algoParam === 'SHA1')   algorithm = 'SHA-1';
+            if (algoParam === 'SHA1') algorithm = 'SHA-1';
             if (algoParam === 'SHA256') algorithm = 'SHA-256';
             if (algoParam === 'SHA512') algorithm = 'SHA-512';
             var period = parseInt(url.searchParams.get('period'), 10) || DEFAULTS.period;
@@ -310,7 +383,7 @@
                 digits: digits,
                 issuer: issuer || ''
             };
-        } catch(e) {
+        } catch (e) {
             return null;
         }
     }
@@ -322,46 +395,52 @@
     }
 
     // ---- Controller ----
-    var KeysController = function() {
-        var store, keys, editing = false;
+    var KeysController = function () {
+        var store,
+            keys,
+            editing = false;
         var editIndex = -1;
         var renderToken = 0;
         var tickTimer = null;
         var lastRenderedAt = 0;
         var lastCodeStepByIndex = {};
 
-        var $ = function(sel) { return document.querySelector(sel); };
+        var $ = function (sel) {
+            return document.querySelector(sel);
+        };
 
-        var startTicker = function() {
+        var startTicker = function () {
             if (tickTimer) clearInterval(tickTimer);
             tickTimer = setInterval(tick, 1000);
         };
 
-        var stopTicker = function() {
+        var stopTicker = function () {
             if (tickTimer) clearInterval(tickTimer);
             tickTimer = null;
         };
 
-        var addFallbackAccount = async function() {
+        var addFallbackAccount = async function () {
             var accounts = await store.getAccounts();
             if (accounts === null || accounts.length > 0) return;
-            await store.saveAccounts([{ 
-                name: 'demo@example.com',
-                secret: generateRandomSecret(),
-                algorithm: DEFAULTS.algorithm,
-                period: DEFAULTS.period,
-                digits: DEFAULTS.digits,
-                url: 'https://github.com',
-                issuer: 'Github'
-            }]);
+            await store.saveAccounts([
+                {
+                    name: 'demo@example.com',
+                    secret: generateRandomSecret(),
+                    algorithm: DEFAULTS.algorithm,
+                    period: DEFAULTS.period,
+                    digits: DEFAULTS.digits,
+                    url: 'https://github.com',
+                    issuer: 'Github'
+                }
+            ]);
             await render();
         };
 
-        var stripJsonComments = function(text) {
+        var stripJsonComments = function (text) {
             return text.replace(/^\s*\/\/.*$/gm, '').replace(/^\s*#.*$/gm, '');
         };
 
-        var loadDefaultAccounts = async function() {
+        var loadDefaultAccounts = async function () {
             try {
                 var existing = await store.getAccounts();
                 if (existing === null || existing.length > 0) return;
@@ -422,51 +501,53 @@
             }
         };
 
-        var init = async function() {
+        var init = async function () {
             store = new StorageService();
-            keys  = new KeyUtilities();
+            keys = new KeyUtilities();
 
             if (!store.isSupported()) return;
 
             // Bind UI
             $('#editBtn').addEventListener('click', toggleEdit);
             $('#exportBtn').addEventListener('click', exportAccounts);
-            $('#importBtn').addEventListener('click', function() { $('#importFile').click(); });
+            $('#importBtn').addEventListener('click', function () {
+                $('#importFile').click();
+            });
             $('#importFile').addEventListener('change', importAccounts);
             $('#resetBtn').addEventListener('click', resetAccounts);
-            $('#addBtn').addEventListener('click', function() {
+            $('#addBtn').addEventListener('click', function () {
                 $('#keySecret').value = generateRandomSecret();
                 $('#addModal').classList.add('open');
             });
-            $('#regenSecret').addEventListener('click', function() {
+            $('#regenSecret').addEventListener('click', function () {
                 $('#keySecret').value = generateRandomSecret();
             });
             $('#addKeyCancel').addEventListener('click', closeModal);
             $('#addKeyButton').addEventListener('click', onSave);
-            $('#addModal').addEventListener('click', function(e) {
+            $('#addModal').addEventListener('click', function (e) {
                 if (e.target === $('#addModal')) closeModal();
             });
 
             // QR modal
             $('#qrClose').addEventListener('click', closeQR);
-            $('#qrModal').addEventListener('click', function(e) {
+            $('#qrModal').addEventListener('click', function (e) {
                 if (e.target === $('#qrModal')) closeQR();
             });
 
             // Encryption UI
-            $('#lockScreenUnlock').addEventListener('click', function() {
+            $('#lockScreenUnlock').addEventListener('click', function () {
                 openPasswordModal('unlock');
             });
             $('#lockBtn').addEventListener('click', onLockToggle);
-            $('#passwordModal').addEventListener('click', function(e) {
+            $('#passwordModal').addEventListener('click', function (e) {
                 if (e.target === $('#passwordModal')) closePasswordModal();
             });
             $('#pwCancel').addEventListener('click', closePasswordModal);
             $('#pwSubmit').addEventListener('click', onPasswordSubmit);
-            $('#pwInput').addEventListener('keydown', function(e) {
+            $('#pwInput').addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') onPasswordSubmit();
             });
-            $('#setPwModal').addEventListener('click', function(e) {
+            $('#setPwModal').addEventListener('click', function (e) {
                 if (e.target === $('#setPwModal')) closeSetPwModal();
             });
             $('#setPwCancel').addEventListener('click', closeSetPwModal);
@@ -492,18 +573,19 @@
         // ---- Theme (auto-detect by local time: 08:00–22:00 = light) ----
         var manualTheme = null; // manual override for current session
 
-        var getTimeBasedTheme = function() {
+        var getTimeBasedTheme = function () {
             var hour = new Date().getHours();
-            return (hour >= 8 && hour < 22) ? 'light' : 'dark';
+            return hour >= 8 && hour < 22 ? 'light' : 'dark';
         };
 
-        var toggleTheme = function() {
-            var current = document.documentElement.getAttribute('data-theme') || getTimeBasedTheme();
+        var toggleTheme = function () {
+            var current =
+                document.documentElement.getAttribute('data-theme') || getTimeBasedTheme();
             manualTheme = current === 'dark' ? 'light' : 'dark';
             applyTheme();
         };
 
-        var applyTheme = function() {
+        var applyTheme = function () {
             var theme = manualTheme || getTimeBasedTheme();
             document.documentElement.setAttribute('data-theme', theme);
             var btn = $('#themeBtn');
@@ -511,7 +593,7 @@
         };
 
         // ---- Encryption UI ----
-        var showLockScreen = function() {
+        var showLockScreen = function () {
             stopTicker();
             $('#lockScreen').style.display = 'flex';
             $('#accounts').style.display = 'none';
@@ -519,12 +601,12 @@
             updateLockIcon();
         };
 
-        var hideLockScreen = function() {
+        var hideLockScreen = function () {
             $('#lockScreen').style.display = 'none';
             $('#accounts').style.display = '';
         };
 
-        var onLockToggle = function() {
+        var onLockToggle = function () {
             if (store.isEncrypted() && store.isUnlocked()) {
                 // Lock it
                 store.lock();
@@ -535,7 +617,7 @@
             }
         };
 
-        var updateLockIcon = function() {
+        var updateLockIcon = function () {
             var btn = $('#lockBtn');
             if (!btn) return;
             if (store.isEncrypted()) {
@@ -552,7 +634,7 @@
         // Unlock modal
         var passwordAction = ''; // 'unlock'
 
-        var openPasswordModal = function(action) {
+        var openPasswordModal = function (action) {
             passwordAction = action;
             $('#pwInput').value = '';
             $('#pwError').textContent = '';
@@ -561,18 +643,23 @@
                 $('#pwSubmit').textContent = 'Unlock';
             }
             $('#passwordModal').classList.add('open');
-            setTimeout(function() { $('#pwInput').focus(); }, 100);
+            setTimeout(function () {
+                $('#pwInput').focus();
+            }, 100);
         };
 
-        var closePasswordModal = function() {
+        var closePasswordModal = function () {
             $('#passwordModal').classList.remove('open');
             $('#pwInput').value = '';
             $('#pwError').textContent = '';
         };
 
-        var onPasswordSubmit = async function() {
+        var onPasswordSubmit = async function () {
             var pw = $('#pwInput').value;
-            if (!pw) { $('#pwInput').focus(); return; }
+            if (!pw) {
+                $('#pwInput').focus();
+                return;
+            }
             if (passwordAction === 'unlock') {
                 var ok = await store.unlock(pw);
                 if (ok) {
@@ -589,7 +676,7 @@
         };
 
         // Set password modal
-        var openSetPassword = function() {
+        var openSetPassword = function () {
             $('#setPwInput').value = '';
             $('#setPwConfirm').value = '';
             $('#setPwError').textContent = '';
@@ -601,14 +688,16 @@
                 $('#setPwHint').textContent = 'Encrypts accounts in localStorage with AES-GCM.';
             }
             $('#setPwModal').classList.add('open');
-            setTimeout(function() { $('#setPwInput').focus(); }, 100);
+            setTimeout(function () {
+                $('#setPwInput').focus();
+            }, 100);
         };
 
-        var closeSetPwModal = function() {
+        var closeSetPwModal = function () {
             $('#setPwModal').classList.remove('open');
         };
 
-        var onSetPasswordSubmit = async function() {
+        var onSetPasswordSubmit = async function () {
             var pw = $('#setPwInput').value;
             var confirm = $('#setPwConfirm').value;
             if (pw && pw !== confirm) {
@@ -624,7 +713,7 @@
         // ---- Drag and Drop ----
         var dragFromIdx = -1;
 
-        var onDragStart = function(e) {
+        var onDragStart = function (e) {
             var card = e.target.closest('.account-card');
             if (!card || !editing) return;
             dragFromIdx = parseInt(card.getAttribute('data-idx'), 10);
@@ -632,7 +721,7 @@
             e.dataTransfer.effectAllowed = 'move';
         };
 
-        var onDragOver = function(e) {
+        var onDragOver = function (e) {
             if (dragFromIdx < 0 || !editing) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
@@ -645,13 +734,13 @@
             }
         };
 
-        var onDrop = async function(e) {
+        var onDrop = async function (e) {
             e.preventDefault();
             var card = e.target.closest('.account-card');
             if (!card || dragFromIdx < 0) return;
             var toIdx = parseInt(card.getAttribute('data-idx'), 10);
             if (dragFromIdx !== toIdx) {
-                var accounts = await store.getAccounts() || [];
+                var accounts = (await store.getAccounts()) || [];
                 var item = accounts.splice(dragFromIdx, 1)[0];
                 accounts.splice(toIdx, 0, item);
                 await store.saveAccounts(accounts);
@@ -660,9 +749,11 @@
             cleanupDrag();
         };
 
-        var onDragEnd = function() { cleanupDrag(); };
+        var onDragEnd = function () {
+            cleanupDrag();
+        };
 
-        var cleanupDrag = function() {
+        var cleanupDrag = function () {
             dragFromIdx = -1;
             var cards = document.querySelectorAll('.account-card');
             for (var i = 0; i < cards.length; i++) {
@@ -671,11 +762,11 @@
         };
 
         // ---- Render ----
-        var render = async function() {
+        var render = async function () {
             return renderAt(Math.round(Date.now() / 1000));
         };
 
-        var renderAt = async function(now) {
+        var renderAt = async function (now) {
             var list = $('#accounts');
             var token = ++renderToken;
             var accounts = await store.getAccounts();
@@ -686,13 +777,19 @@
             lastRenderedAt = now;
             lastCodeStepByIndex = {};
 
-            for (var _i = 0; _i < accounts.length; _i++) { var acc = accounts[_i]; var i = _i;
-                var algo   = acc.algorithm || DEFAULTS.algorithm;
-                var period = acc.period    || DEFAULTS.period;
-                var digits = acc.digits    || DEFAULTS.digits;
-                var code   = await keys.generate(acc.secret, { algorithm: algo, period: period, digits: digits });
+            for (var _i = 0; _i < accounts.length; _i++) {
+                var acc = accounts[_i];
+                var i = _i;
+                var algo = acc.algorithm || DEFAULTS.algorithm;
+                var period = acc.period || DEFAULTS.period;
+                var digits = acc.digits || DEFAULTS.digits;
+                var code = await keys.generate(acc.secret, {
+                    algorithm: algo,
+                    period: period,
+                    digits: digits
+                });
                 if (token !== renderToken) return;
-                var cd     = period - (now % period);
+                var cd = period - (now % period);
 
                 var card = document.createElement('div');
                 card.className = 'account-card';
@@ -702,52 +799,76 @@
                 if (editing) card.setAttribute('draggable', 'true');
 
                 var displayName = acc.issuer
-                    ? acc.issuer + (acc.name ? ' (' + acc.name + ')' : '')
-                    : acc.name;
+                    ? escapeHtml(acc.issuer) + (acc.name ? ' (' + escapeHtml(acc.name) + ')' : '')
+                    : escapeHtml(acc.name);
                 var nameHtml = acc.url
-                    ? '<a href="' + acc.url + '" target="_blank" rel="noopener">' + displayName + '</a>'
+                    ? '<a href="' +
+                      escapeHtml(acc.url) +
+                      '" target="_blank" rel="noopener noreferrer">' +
+                      displayName +
+                      '</a>'
                     : displayName;
 
                 var extras = [];
                 if (algo !== DEFAULTS.algorithm) extras.push(algoLabel(algo));
-                if (digits !== DEFAULTS.digits)  extras.push(digits + 'd');
+                if (digits !== DEFAULTS.digits) extras.push(digits + 'd');
                 var extraHtml = extras.length
-                    ? '<span class="meta-sep">\u00b7</span><span class="meta-extra">' + extras.join(' \u00b7 ') + '</span>'
+                    ? '<span class="meta-sep">\u00b7</span><span class="meta-extra">' +
+                      extras.join(' \u00b7 ') +
+                      '</span>'
                     : '';
 
                 var actionsHtml = '<div class="card-actions">';
-                actionsHtml += '<button class="qr-btn" data-idx="' + i + '" title="Show QR code"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg></button>';
+                actionsHtml +=
+                    '<button class="qr-btn" data-idx="' +
+                    i +
+                    '" title="Show QR code"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg></button>';
                 if (editing) {
                     actionsHtml += '<button class="drag-handle" title="Drag to reorder">≡</button>';
-                    actionsHtml += '<button class="edit-btn" data-idx="' + i + '" title="Edit">&#x270E;</button>';
-                    actionsHtml += '<button class="delete-btn" data-idx="' + i + '" title="Delete">&times;</button>';
+                    actionsHtml +=
+                        '<button class="edit-btn" data-idx="' +
+                        i +
+                        '" title="Edit">&#x270E;</button>';
+                    actionsHtml +=
+                        '<button class="delete-btn" data-idx="' +
+                        i +
+                        '" title="Delete">&times;</button>';
                 }
                 actionsHtml += '</div>';
 
                 card.innerHTML =
                     '<div class="account-info">' +
-                        '<div class="totp-code" data-code="' + code + '">' + code + '<span class="copy-tip">Copied!</span></div>' +
-                        '<div class="account-meta">' +
-                            '<span class="account-name">' + nameHtml + '</span>' +
-                            ' <span class="meta-countdown">' + cd + 's</span>' +
-                        '</div>' +
-                    '</div>' + actionsHtml;
+                    '<div class="totp-code" data-code="' +
+                    code +
+                    '">' +
+                    code +
+                    '<span class="copy-tip">Copied!</span></div>' +
+                    '<div class="account-meta">' +
+                    '<span class="account-name">' +
+                    nameHtml +
+                    '</span>' +
+                    ' <span class="meta-countdown">' +
+                    cd +
+                    's</span>' +
+                    '</div>' +
+                    '</div>' +
+                    actionsHtml;
 
                 var codeEl = card.querySelector('.totp-code');
-                codeEl.addEventListener('click', function(e) {
+                codeEl.addEventListener('click', function (e) {
                     e.preventDefault();
                     copyToClipboard(this.getAttribute('data-code'), this);
                 });
 
-                card.querySelector('.qr-btn').addEventListener('click', function() {
+                card.querySelector('.qr-btn').addEventListener('click', function () {
                     showQR(parseInt(this.getAttribute('data-idx'), 10));
                 });
 
                 if (editing) {
-                    card.querySelector('.edit-btn').addEventListener('click', function() {
+                    card.querySelector('.edit-btn').addEventListener('click', function () {
                         openEdit(parseInt(this.getAttribute('data-idx'), 10));
                     });
-                    card.querySelector('.delete-btn').addEventListener('click', function() {
+                    card.querySelector('.delete-btn').addEventListener('click', function () {
                         deleteAccount(parseInt(this.getAttribute('data-idx'), 10));
                     });
                     card.addEventListener('dragstart', onDragStart);
@@ -761,7 +882,7 @@
             updateLockIcon();
         };
 
-        var toggleEdit = function() {
+        var toggleEdit = function () {
             editing = !editing;
             $('#editBtn').classList.toggle('active', editing);
             $('#themeBtn').classList.toggle('hidden', !editing);
@@ -773,13 +894,13 @@
             render();
         };
 
-        var buildOtpauth = function(acc) {
-            var algo   = acc.algorithm || DEFAULTS.algorithm;
-            var period = acc.period    || DEFAULTS.period;
-            var digits = acc.digits    || DEFAULTS.digits;
+        var buildOtpauth = function (acc) {
+            var algo = acc.algorithm || DEFAULTS.algorithm;
+            var period = acc.period || DEFAULTS.period;
+            var digits = acc.digits || DEFAULTS.digits;
             var issuer = acc.issuer || '';
-            var label  = issuer
-                ? (encodeURIComponent(issuer) + ':' + encodeURIComponent(acc.name))
+            var label = issuer
+                ? encodeURIComponent(issuer) + ':' + encodeURIComponent(acc.name)
                 : encodeURIComponent(acc.name);
             var params = 'secret=' + encodeURIComponent(acc.secret);
             if (issuer) params += '&issuer=' + encodeURIComponent(issuer);
@@ -789,18 +910,18 @@
             return 'otpauth://totp/' + label + '?' + params;
         };
 
-        var exportAccounts = async function() {
-            var accounts = await store.getAccounts() || [];
-            var full = accounts.map(function(acc) {
+        var exportAccounts = async function () {
+            var accounts = (await store.getAccounts()) || [];
+            var full = accounts.map(function (acc) {
                 return {
-                    name:      acc.name,
-                    issuer:    acc.issuer    || '',
-                    secret:    acc.secret,
+                    name: acc.name,
+                    issuer: acc.issuer || '',
+                    secret: acc.secret,
                     algorithm: acc.algorithm || DEFAULTS.algorithm,
-                    period:    acc.period    || DEFAULTS.period,
-                    digits:    acc.digits    || DEFAULTS.digits,
-                    url:       acc.url       || '',
-                    otpauth:   buildOtpauth(acc)
+                    period: acc.period || DEFAULTS.period,
+                    digits: acc.digits || DEFAULTS.digits,
+                    url: acc.url || '',
+                    otpauth: buildOtpauth(acc)
                 };
             });
             var data = JSON.stringify(full, null, 2);
@@ -811,11 +932,11 @@
             a.click();
         };
 
-        var importAccounts = function(e) {
+        var importAccounts = function (e) {
             var file = e.target.files[0];
             if (!file) return;
             var reader = new FileReader();
-            reader.onload = async function(ev) {
+            reader.onload = async function (ev) {
                 var text = ev.target.result;
                 var imported = 0;
                 try {
@@ -825,38 +946,56 @@
                         var item = arr[i];
                         if (item.secret) {
                             await addAccount(
-                                item.name      || 'Imported',
+                                item.name || 'Imported',
                                 item.secret,
                                 item.algorithm || DEFAULTS.algorithm,
-                                item.period    || DEFAULTS.period,
-                                item.digits    || DEFAULTS.digits,
-                                item.url       || '',
-                                item.issuer    || ''
+                                item.period || DEFAULTS.period,
+                                item.digits || DEFAULTS.digits,
+                                item.url || '',
+                                item.issuer || ''
                             );
                             imported++;
                         } else if (item.otpauth) {
                             var parsed = parseOtpauth(item.otpauth);
                             if (parsed) {
-                                await addAccount(parsed.name, parsed.secret, parsed.algorithm, parsed.period, parsed.digits, '', parsed.issuer);
+                                await addAccount(
+                                    parsed.name,
+                                    parsed.secret,
+                                    parsed.algorithm,
+                                    parsed.period,
+                                    parsed.digits,
+                                    '',
+                                    parsed.issuer
+                                );
                                 imported++;
                             }
                         }
                     }
-                } catch(ex) {
+                } catch (ex) {
                     var lines = text.split('\n');
                     for (var j = 0; j < lines.length; j++) {
                         var line = lines[j].trim();
                         if (line.indexOf('otpauth://') === 0) {
                             var parsed = parseOtpauth(line);
                             if (parsed) {
-                                await addAccount(parsed.name, parsed.secret, parsed.algorithm, parsed.period, parsed.digits, '', parsed.issuer);
+                                await addAccount(
+                                    parsed.name,
+                                    parsed.secret,
+                                    parsed.algorithm,
+                                    parsed.period,
+                                    parsed.digits,
+                                    '',
+                                    parsed.issuer
+                                );
                                 imported++;
                             }
                         }
                     }
                 }
                 if (imported > 0) {
-                    showToast('Imported ' + imported + ' account' + (imported > 1 ? 's' : '') + '.');
+                    showToast(
+                        'Imported ' + imported + ' account' + (imported > 1 ? 's' : '') + '.'
+                    );
                 } else {
                     showToast('No valid accounts found in file.');
                 }
@@ -865,14 +1004,14 @@
             reader.readAsText(file);
         };
 
-        var deleteAccount = async function(idx) {
+        var deleteAccount = async function (idx) {
             var accounts = await store.getAccounts();
             accounts.splice(idx, 1);
             await store.saveAccounts(accounts);
             render();
         };
 
-        var resetAccounts = function() {
+        var resetAccounts = function () {
             if (!confirm('Delete all accounts? This cannot be undone.')) return;
             store.resetAll();
             editing = false;
@@ -884,30 +1023,32 @@
             render();
         };
 
-        var addAccount = async function(name, secret, algorithm, period, digits, url, issuer) {
+        var addAccount = async function (name, secret, algorithm, period, digits, url, issuer) {
             if (!secret) return false;
             var acc = {
-                name:      name,
-                secret:    secret,
+                name: name,
+                secret: secret,
                 algorithm: algorithm || DEFAULTS.algorithm,
-                period:    period    || DEFAULTS.period,
-                digits:    digits    || DEFAULTS.digits,
-                url:       url       || '',
-                issuer:    issuer    || ''
+                period: period || DEFAULTS.period,
+                digits: digits || DEFAULTS.digits,
+                url: url || '',
+                issuer: issuer || ''
             };
-            var accounts = await store.getAccounts() || [];
+            var accounts = (await store.getAccounts()) || [];
             accounts.push(acc);
             await store.saveAccounts(accounts);
             render();
             return true;
         };
 
-        var showQR = async function(idx) {
-            var accounts = await store.getAccounts() || [];
+        var showQR = async function (idx) {
+            var accounts = (await store.getAccounts()) || [];
             var acc = accounts[idx];
             if (!acc) return;
             var uri = buildOtpauth(acc);
-            $('#qrTitle').textContent = acc.issuer ? acc.issuer + (acc.name ? ' (' + acc.name + ')' : '') : acc.name;
+            $('#qrTitle').textContent = acc.issuer
+                ? acc.issuer + (acc.name ? ' (' + acc.name + ')' : '')
+                : acc.name;
             $('#qrUri').textContent = uri;
 
             var qr = qrcode(0, 'M');
@@ -936,46 +1077,54 @@
             $('#qrModal').classList.add('open');
         };
 
-        var closeQR = function() {
+        var closeQR = function () {
             $('#qrModal').classList.remove('open');
         };
 
-        var openEdit = async function(idx) {
-            var accounts = await store.getAccounts() || [];
+        var openEdit = async function (idx) {
+            var accounts = (await store.getAccounts()) || [];
             var acc = accounts[idx];
             if (!acc) return;
             editIndex = idx;
             $('#modalTitle').textContent = 'Edit Account';
             $('#addKeyButton').textContent = 'Save';
-            $('#keyIssuer').value    = acc.issuer || '';
-            $('#keyAccount').value   = acc.name || '';
-            $('#keySecret').value    = acc.secret || '';
-            $('#keyUrl').value       = acc.url || '';
+            $('#keyIssuer').value = acc.issuer || '';
+            $('#keyAccount').value = acc.name || '';
+            $('#keySecret').value = acc.secret || '';
+            $('#keyUrl').value = acc.url || '';
             $('#keyAlgorithm').value = acc.algorithm || DEFAULTS.algorithm;
-            $('#keyPeriod').value    = acc.period || DEFAULTS.period;
-            $('#keyDigits').value    = acc.digits || DEFAULTS.digits;
+            $('#keyPeriod').value = acc.period || DEFAULTS.period;
+            $('#keyDigits').value = acc.digits || DEFAULTS.digits;
             $('#addModal').classList.add('open');
         };
 
-        var onSave = async function() {
+        var onSave = async function () {
             var issuer = $('#keyIssuer').value.trim();
-            var name   = $('#keyAccount').value.trim();
+            var name = $('#keyAccount').value.trim();
             var secret = $('#keySecret').value.replace(/\s/g, '');
-            var url    = $('#keyUrl').value.trim();
-            var algo   = $('#keyAlgorithm').value;
+            var url = $('#keyUrl').value.trim();
+            var algo = $('#keyAlgorithm').value;
             var period = parseInt($('#keyPeriod').value, 10);
             var digits = parseInt($('#keyDigits').value, 10);
-            if (!name)   { $('#keyAccount').focus(); return; }
-            if (!secret) { $('#keySecret').focus(); return; }
+            if (!name) {
+                $('#keyAccount').focus();
+                return;
+            }
+            if (!secret) {
+                $('#keySecret').focus();
+                return;
+            }
 
             if (editIndex >= 0) {
-                var accounts = await store.getAccounts() || [];
+                var accounts = (await store.getAccounts()) || [];
                 accounts[editIndex] = {
-                    name: name, secret: secret,
+                    name: name,
+                    secret: secret,
                     algorithm: algo || DEFAULTS.algorithm,
                     period: period || DEFAULTS.period,
                     digits: digits || DEFAULTS.digits,
-                    url: url || '', issuer: issuer || ''
+                    url: url || '',
+                    issuer: issuer || ''
                 };
                 await store.saveAccounts(accounts);
                 render();
@@ -985,7 +1134,7 @@
             closeModal();
         };
 
-        var closeModal = function() {
+        var closeModal = function () {
             $('#addModal').classList.remove('open');
             editIndex = -1;
             $('#modalTitle').textContent = 'Add Account';
@@ -999,7 +1148,7 @@
             $('#keyDigits').value = DEFAULTS.digits;
         };
 
-        var tick = function() {
+        var tick = function () {
             var now = Math.round(Date.now() / 1000);
             if (now === lastRenderedAt) return;
 
@@ -1031,5 +1180,4 @@
 
     exports.KeysController = KeysController;
     exports.DEFAULTS = DEFAULTS;
-
-})(typeof exports === 'undefined' ? this['totpAuth'] = {} : exports);
+})(typeof exports === 'undefined' ? (this['totpAuth'] = {}) : exports);

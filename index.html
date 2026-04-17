@@ -1,485 +1,854 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>TOTP Authenticator</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self';">
-    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
-    <link rel="apple-touch-icon" href="img/icon_60.png" />
-    <link rel="apple-touch-icon" sizes="120x120" href="img/icon_120.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="img/icon_152.png">
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#1e88e5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="TOTP Authenticator">
-    <style>
-        /* ---- Theme variables ---- */
-        :root, [data-theme="light"] {
-            --bg: #f5f5f5;
-            --text: #222;
-            --text-muted: #999;
-            --text-dim: #bbb;
-            --card-bg: #fff;
-            --card-shadow: rgba(0,0,0,0.06);
-            --card-hover-shadow: rgba(0,0,0,0.1);
-            --topbar-bg: #1e88e5;
-            --accent: #1e88e5;
-            --accent-hover: #1565c0;
-            --accent-bg: #e3f2fd;
-            --code-color: #222;
-            --input-bg: #fafafa;
-            --input-border: #ddd;
-            --modal-bg: #fff;
-            --btn-cancel-bg: #eee;
-            --btn-cancel-text: #555;
-            --border-dashed: #ccc;
-            --copied-bg: #c8e6c9;
-            --name-color: #555;
-            --link-color: #1e88e5;
-            --danger: #e53935;
-            --danger-bg: #ffebee;
-            --lock-bg: #f5f5f5;
-        }
-        [data-theme="dark"] {
-            --bg: #1a1a2e;
-            --text: #e0e0e0;
-            --text-muted: #888;
-            --text-dim: #666;
-            --card-bg: #16213e;
-            --card-shadow: rgba(0,0,0,0.3);
-            --card-hover-shadow: rgba(0,0,0,0.5);
-            --topbar-bg: #0f3460;
-            --accent: #4fc3f7;
-            --accent-hover: #29b6f6;
-            --accent-bg: rgba(79,195,247,0.15);
-            --code-color: #e0e0e0;
-            --input-bg: #1a1a2e;
-            --input-border: #333;
-            --modal-bg: #16213e;
-            --btn-cancel-bg: #2a2a4a;
-            --btn-cancel-text: #aaa;
-            --border-dashed: #444;
-            --copied-bg: #2e7d32;
-            --name-color: #aaa;
-            --link-color: #4fc3f7;
-            --danger: #ef5350;
-            --danger-bg: rgba(239,83,80,0.15);
-            --lock-bg: #1a1a2e;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* ---- Top bar ---- */
-        .topbar {
-            background: var(--topbar-bg);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            transition: background 0.3s;
-        }
-        .topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-        }
-        .topbar-title {
-            text-align: left;
-            font-size: 1.15rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            color: #fff;
-            text-decoration: none;
-            flex-shrink: 0;
-        }
-        .topbar-title:hover { opacity: 0.85; }
-        .topbar-version {
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: rgba(255,255,255,0.9);
-            background: rgba(255,255,255,0.18);
-            padding: 2px 8px;
-            border-radius: 10px;
-            white-space: nowrap;
-            letter-spacing: 0.3px;
-            flex-shrink: 0;
-        }
-        .topbar-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .topbar-actions button {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.3rem;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 6px;
-            opacity: 0.85;
-            transition: opacity 0.15s, background 0.15s;
-        }
-        .topbar-actions button:hover { opacity: 1; background: rgba(255,255,255,0.15); }
-        .topbar-actions button.active { opacity: 1; background: rgba(255,255,255,0.25); }
-        .topbar-actions button.hidden { display: none; }
-
-        /* ---- Account list ---- */
-        .account-list { margin: 12px 16px; }
-        .account-card {
-            background: var(--card-bg);
-            border-radius: 10px;
-            margin-bottom: 8px;
-            padding: 18px 28px;
-            box-shadow: 0 1px 3px var(--card-shadow);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: box-shadow 0.15s, background 0.3s, transform 0.15s;
-        }
-        .account-card:hover { box-shadow: 0 2px 8px var(--card-hover-shadow); }
-        .account-card.dragging { opacity: 0.5; transform: scale(0.98); }
-        .account-card.drag-over { border-top: 3px solid var(--accent); margin-top: -3px; }
-        .account-info { flex: 1; min-width: 0; }
-
-        /* Code */
-        .totp-code {
-            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: 4px;
-            color: var(--code-color);
-            cursor: pointer;
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 6px;
-            transition: background 0.15s;
-            user-select: all;
-            position: relative;
-        }
-        .totp-code:hover { background: var(--accent-bg); }
-        .totp-code.copied { background: var(--copied-bg); }
-        .totp-code .copy-tip {
-            position: absolute;
-            top: -26px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: #fff;
-            font-size: 0.7rem;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            letter-spacing: 0;
-            font-weight: 400;
-            padding: 3px 8px;
-            border-radius: 4px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-        }
-        .totp-code.copied .copy-tip { opacity: 1; }
-
-        /* Name row */
-        .account-meta { font-size: 0.9rem; color: var(--text-muted); }
-        .account-name { font-weight: 500; color: var(--name-color); }
-        .account-name a { color: var(--link-color); text-decoration: none; }
-        .account-name a:hover { text-decoration: underline; }
-        .meta-sep { margin: 0 5px; color: var(--text-dim); }
-        .meta-extra { color: var(--text-dim); font-family: monospace; font-size: 0.8rem; }
-        .meta-countdown { color: var(--text-dim); font-family: monospace; font-size: 0.85rem; }
-
-        /* Card action buttons */
-        .card-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
-        .qr-btn, .edit-btn, .delete-btn, .drag-handle {
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 6px 8px;
-            border-radius: 6px;
-            transition: color 0.15s, background 0.15s;
-        }
-        .qr-btn:hover, .edit-btn:hover { color: var(--accent); background: var(--accent-bg); }
-        .delete-btn { font-size: 1.4rem; }
-        .delete-btn:hover { color: var(--danger); background: var(--danger-bg); }
-        .drag-handle { cursor: grab; font-size: 1.5rem; }
-        .drag-handle:active { cursor: grabbing; }
-
-        /* QR modal */
-        .qr-modal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5); z-index: 200;
-            align-items: center; justify-content: center;
-        }
-        .qr-modal.open { display: flex; }
-        .qr-modal-content {
-            background: var(--modal-bg); border-radius: 16px;
-            padding: 28px; text-align: center;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-            max-width: 360px; width: 90%;
-        }
-        .qr-modal-content h3 { margin: 0 0 16px; font-size: 1.1rem; color: var(--text); }
-        .qr-modal-content canvas { display: block; margin: 0 auto 16px; }
-        .qr-modal-content .qr-uri { font-size: 0.65rem; color: var(--text-muted); word-break: break-all; margin-bottom: 16px; font-family: monospace; }
-        .qr-close-btn {
-            background: var(--btn-cancel-bg); border: none; border-radius: 8px;
-            padding: 10px 32px; font-size: 0.95rem; font-weight: 600;
-            cursor: pointer; color: var(--btn-cancel-text); transition: background 0.15s;
-        }
-        .qr-close-btn:hover { opacity: 0.85; }
-
-        /* Add button row */
-        .add-row { margin: 0 16px 16px; }
-        .add-btn {
-            display: block; width: 100%; padding: 14px;
-            background: var(--card-bg); border: 2px dashed var(--border-dashed);
-            border-radius: 10px; color: var(--accent);
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-            transition: border-color 0.15s, background 0.15s;
-        }
-        .add-btn:hover { border-color: var(--accent); background: var(--accent-bg); }
-
-        /* ---- Modal overlay ---- */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.4); z-index: 100;
-            align-items: center; justify-content: center;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal {
-            background: var(--modal-bg); border-radius: 14px;
-            width: 92%; max-width: 420px; padding: 24px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-        }
-        .modal h2 { margin-bottom: 16px; font-size: 1.2rem; color: var(--text); }
-        .modal label { display: block; font-size: 0.85rem; color: var(--text-muted); margin: 10px 0 4px; }
-        .modal input, .modal select {
-            width: 100%; padding: 10px 12px;
-            border: 1px solid var(--input-border); border-radius: 8px;
-            font-size: 0.95rem; background: var(--input-bg);
-            color: var(--text); outline: none; transition: border-color 0.15s;
-        }
-        .modal input:focus, .modal select:focus { border-color: var(--accent); }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-actions button {
-            flex: 1; padding: 11px; border: none; border-radius: 8px;
-            font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
-        }
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-cancel { background: var(--btn-cancel-bg); color: var(--btn-cancel-text); }
-        .btn-cancel:hover { opacity: 0.85; }
-        .modal .hint { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
-        .modal .error { font-size: 0.82rem; color: var(--danger); margin-top: 8px; }
-
-        /* ---- Lock screen ---- */
-        .lock-screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 60vh;
-            text-align: center;
-            padding: 24px;
-        }
-        .lock-screen .lock-icon { font-size: 3rem; margin-bottom: 16px; }
-        .lock-screen h2 { margin-bottom: 8px; color: var(--text); }
-        .lock-screen p { color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; }
-        .lock-screen button {
-            padding: 12px 32px; border: none; border-radius: 8px;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-            background: var(--accent); color: #fff; transition: background 0.15s;
-        }
-        .lock-screen button:hover { background: var(--accent-hover); }
-
-        /* ---- Toast notifications ---- */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: var(--card-bg);
-            color: var(--text);
-            padding: 12px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px var(--card-shadow);
-            font-size: 0.9rem;
-            font-weight: 500;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
-            z-index: 1000;
-        }
-        .toast.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* ---- Responsive ---- */
-        @media (min-width: 1024px) {
-            .totp-code { font-size: 2.2rem; letter-spacing: 6px; }
-            .account-name { font-size: 1.15rem; }
-            .meta-countdown { font-size: 0.95rem; }
-            .account-card { padding: 20px 32px; }
-        }
-        @media (max-width: 480px) {
-            .topbar { padding: 10px 12px; }
-            .topbar-left { gap: 6px; }
-            .topbar-title {
-                font-size: 0.95rem;
-                flex-shrink: 1;
-                overflow: hidden;
-                text-overflow: ellipsis;
+    <head>
+        <title>TOTP Authenticator</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; worker-src 'self';"
+        />
+        <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+        <link rel="apple-touch-icon" href="img/icon_60.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="img/icon_120.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="img/icon_152.png" />
+        <link rel="manifest" href="./manifest.json" />
+        <meta name="theme-color" content="#1e88e5" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="TOTP Authenticator" />
+        <style>
+            /* ---- Theme variables ---- */
+            :root,
+            [data-theme='light'] {
+                --bg: #f5f5f5;
+                --text: #222;
+                --text-muted: #999;
+                --text-dim: #bbb;
+                --card-bg: #fff;
+                --card-shadow: rgba(0, 0, 0, 0.06);
+                --card-hover-shadow: rgba(0, 0, 0, 0.1);
+                --topbar-bg: #1e88e5;
+                --accent: #1e88e5;
+                --accent-hover: #1565c0;
+                --accent-bg: #e3f2fd;
+                --code-color: #222;
+                --input-bg: #fafafa;
+                --input-border: #ddd;
+                --modal-bg: #fff;
+                --btn-cancel-bg: #eee;
+                --btn-cancel-text: #555;
+                --border-dashed: #ccc;
+                --copied-bg: #c8e6c9;
+                --name-color: #555;
+                --link-color: #1e88e5;
+                --danger: #e53935;
+                --danger-bg: #ffebee;
+                --lock-bg: #f5f5f5;
             }
-            .topbar-version { font-size: 0.6rem; padding: 2px 6px; }
-            .account-list { margin: 8px 8px; }
-            .add-row { margin: 0 8px 16px; }
-            .account-card { padding: 14px 16px; }
-            .totp-code { font-size: 1.5rem; letter-spacing: 3px; }
-            .modal { padding: 18px; }
-        }
-    </style>
-</head>
-<body>
+            [data-theme='dark'] {
+                --bg: #1a1a2e;
+                --text: #e0e0e0;
+                --text-muted: #888;
+                --text-dim: #666;
+                --card-bg: #16213e;
+                --card-shadow: rgba(0, 0, 0, 0.3);
+                --card-hover-shadow: rgba(0, 0, 0, 0.5);
+                --topbar-bg: #0f3460;
+                --accent: #4fc3f7;
+                --accent-hover: #29b6f6;
+                --accent-bg: rgba(79, 195, 247, 0.15);
+                --code-color: #e0e0e0;
+                --input-bg: #1a1a2e;
+                --input-border: #333;
+                --modal-bg: #16213e;
+                --btn-cancel-bg: #2a2a4a;
+                --btn-cancel-text: #aaa;
+                --border-dashed: #444;
+                --copied-bg: #2e7d32;
+                --name-color: #aaa;
+                --link-color: #4fc3f7;
+                --danger: #ef5350;
+                --danger-bg: rgba(239, 83, 80, 0.15);
+                --lock-bg: #1a1a2e;
+            }
 
-    <!-- Top bar -->
-    <div class="topbar">
-        <div class="topbar-left">
-            <a href="https://github.com/johnwmail/totp-authenticator" target="_blank" rel="noopener" class="topbar-title">TOTP Authenticator</a>
-            <span class="topbar-version" id="appVersion">vDev</span>
-        </div>
-        <div class="topbar-actions">
-            <button id="themeBtn" class="hidden" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
-            <button id="lockBtn" class="hidden" title="Encryption" aria-label="Encryption">🔒</button>
-            <button id="resetBtn" class="hidden" title="Reset all accounts" aria-label="Reset all accounts">&#x1F5D1;</button>
-            <button id="importBtn" class="hidden" title="Import accounts" aria-label="Import accounts">&#x21A5;</button>
-            <button id="exportBtn" class="hidden" title="Export accounts" aria-label="Export accounts">&#x2913;</button>
-            <button id="editBtn" title="Edit accounts" aria-label="Edit accounts">&#x2699;</button>
-        </div>
-    </div>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                min-height: 100vh;
+                transition:
+                    background 0.3s,
+                    color 0.3s;
+            }
 
-    <!-- Lock screen -->
-    <div class="lock-screen" id="lockScreen">
-        <div class="lock-icon">🔒</div>
-        <h2>Accounts Locked</h2>
-        <p>Your accounts are encrypted. Enter your password to unlock.</p>
-        <button id="lockScreenUnlock">Unlock</button>
-    </div>
+            /* ---- Top bar ---- */
+            .topbar {
+                background: var(--topbar-bg);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                padding: 12px 16px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                transition: background 0.3s;
+            }
+            .topbar-left {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+            }
+            .topbar-title {
+                text-align: left;
+                font-size: 1.15rem;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+                color: #fff;
+                text-decoration: none;
+                flex-shrink: 0;
+            }
+            .topbar-title:hover {
+                opacity: 0.85;
+            }
+            .topbar-version {
+                font-size: 0.65rem;
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.9);
+                background: rgba(255, 255, 255, 0.18);
+                padding: 2px 8px;
+                border-radius: 10px;
+                white-space: nowrap;
+                letter-spacing: 0.3px;
+                flex-shrink: 0;
+            }
+            .topbar-actions {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-shrink: 0;
+            }
+            .topbar-actions button {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 1.3rem;
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 6px;
+                opacity: 0.85;
+                transition:
+                    opacity 0.15s,
+                    background 0.15s;
+            }
+            .topbar-actions button:hover {
+                opacity: 1;
+                background: rgba(255, 255, 255, 0.15);
+            }
+            .topbar-actions button.active {
+                opacity: 1;
+                background: rgba(255, 255, 255, 0.25);
+            }
+            .topbar-actions button.hidden {
+                display: none;
+            }
 
-    <!-- Account list -->
-    <div class="account-list" id="accounts"></div>
+            /* ---- Account list ---- */
+            .account-list {
+                margin: 12px 16px;
+            }
+            .account-card {
+                background: var(--card-bg);
+                border-radius: 10px;
+                margin-bottom: 8px;
+                padding: 18px 28px;
+                box-shadow: 0 1px 3px var(--card-shadow);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                transition:
+                    box-shadow 0.15s,
+                    background 0.3s,
+                    transform 0.15s;
+            }
+            .account-card:hover {
+                box-shadow: 0 2px 8px var(--card-hover-shadow);
+            }
+            .account-card.dragging {
+                opacity: 0.5;
+                transform: scale(0.98);
+            }
+            .account-card.drag-over {
+                border-top: 3px solid var(--accent);
+                margin-top: -3px;
+            }
+            .account-info {
+                flex: 1;
+                min-width: 0;
+            }
 
-    <!-- Add button (edit mode) -->
-    <div class="add-row" id="addRow" style="display:none;">
-        <button class="add-btn" id="addBtn" aria-label="Add new account">+ Add Account</button>
-    </div>
+            /* Code */
+            .totp-code {
+                font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+                font-size: 1.8rem;
+                font-weight: 700;
+                letter-spacing: 4px;
+                color: var(--code-color);
+                cursor: pointer;
+                display: inline-block;
+                padding: 2px 6px;
+                border-radius: 6px;
+                transition: background 0.15s;
+                user-select: all;
+                position: relative;
+            }
+            .totp-code:hover {
+                background: var(--accent-bg);
+            }
+            .totp-code.copied {
+                background: var(--copied-bg);
+            }
+            .totp-code .copy-tip {
+                position: absolute;
+                top: -26px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.7rem;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                letter-spacing: 0;
+                font-weight: 400;
+                padding: 3px 8px;
+                border-radius: 4px;
+                white-space: nowrap;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+            }
+            .totp-code.copied .copy-tip {
+                opacity: 1;
+            }
 
-    <!-- Hidden file input for import -->
-    <input type="file" id="importFile" accept=".json,.txt" style="display:none" aria-label="Import accounts file" />
+            /* Name row */
+            .account-meta {
+                font-size: 0.9rem;
+                color: var(--text-muted);
+            }
+            .account-name {
+                font-weight: 500;
+                color: var(--name-color);
+            }
+            .account-name a {
+                color: var(--link-color);
+                text-decoration: none;
+            }
+            .account-name a:hover {
+                text-decoration: underline;
+            }
+            .meta-sep {
+                margin: 0 5px;
+                color: var(--text-dim);
+            }
+            .meta-extra {
+                color: var(--text-dim);
+                font-family: monospace;
+                font-size: 0.8rem;
+            }
+            .meta-countdown {
+                color: var(--text-dim);
+                font-family: monospace;
+                font-size: 0.85rem;
+            }
 
-    <!-- QR code modal -->
-    <div class="qr-modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
-        <div class="qr-modal-content">
-            <h3 id="qrTitle"></h3>
-            <canvas id="qrCanvas"></canvas>
-            <div class="qr-uri" id="qrUri"></div>
-            <button class="qr-close-btn" id="qrClose" aria-label="Close QR code">Close</button>
-        </div>
-    </div>
+            /* Card action buttons */
+            .card-actions {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+                flex-shrink: 0;
+            }
+            .qr-btn,
+            .edit-btn,
+            .delete-btn,
+            .drag-handle {
+                background: none;
+                border: none;
+                color: var(--text-dim);
+                font-size: 1.2rem;
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 6px;
+                transition:
+                    color 0.15s,
+                    background 0.15s;
+            }
+            .qr-btn:hover,
+            .edit-btn:hover {
+                color: var(--accent);
+                background: var(--accent-bg);
+            }
+            .delete-btn {
+                font-size: 1.4rem;
+            }
+            .delete-btn:hover {
+                color: var(--danger);
+                background: var(--danger-bg);
+            }
+            .drag-handle {
+                cursor: grab;
+                font-size: 1.5rem;
+            }
+            .drag-handle:active {
+                cursor: grabbing;
+            }
 
-    <!-- Add/Edit account modal -->
-    <div class="modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal">
-            <h2 id="modalTitle">Add Account</h2>
-            <label for="keyIssuer">Issuer</label>
-            <input type="text" id="keyIssuer" placeholder="e.g. GitHub" aria-required="false" />
-            <label for="keyAccount">Account Name *</label>
-            <input type="text" id="keyAccount" placeholder="e.g. user@example.com" aria-required="true" />
-            <label for="keySecret">Secret (base32) *</label>
-            <div style="display:flex;gap:6px;align-items:center;">
-                <input type="text" id="keySecret" placeholder="4BVKJQZILWC46B2LT4CGT3ISFWZ4VYIP" style="flex:1;" aria-required="true" />
-                <button type="button" id="regenSecret" title="Generate random secret" aria-label="Generate random secret" style="background:none;border:1px solid var(--input-border);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.1rem;color:var(--accent);transition:background 0.15s;flex-shrink:0;">&#x21BB;</button>
+            /* QR modal */
+            .qr-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 200;
+                align-items: center;
+                justify-content: center;
+            }
+            .qr-modal.open {
+                display: flex;
+            }
+            .qr-modal-content {
+                background: var(--modal-bg);
+                border-radius: 16px;
+                padding: 28px;
+                text-align: center;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+                max-width: 360px;
+                width: 90%;
+            }
+            .qr-modal-content h3 {
+                margin: 0 0 16px;
+                font-size: 1.1rem;
+                color: var(--text);
+            }
+            .qr-modal-content canvas {
+                display: block;
+                margin: 0 auto 16px;
+            }
+            .qr-modal-content .qr-uri {
+                font-size: 0.65rem;
+                color: var(--text-muted);
+                word-break: break-all;
+                margin-bottom: 16px;
+                font-family: monospace;
+            }
+            .qr-close-btn {
+                background: var(--btn-cancel-bg);
+                border: none;
+                border-radius: 8px;
+                padding: 10px 32px;
+                font-size: 0.95rem;
+                font-weight: 600;
+                cursor: pointer;
+                color: var(--btn-cancel-text);
+                transition: background 0.15s;
+            }
+            .qr-close-btn:hover {
+                opacity: 0.85;
+            }
+
+            /* Add button row */
+            .add-row {
+                margin: 0 16px 16px;
+            }
+            .add-btn {
+                display: block;
+                width: 100%;
+                padding: 14px;
+                background: var(--card-bg);
+                border: 2px dashed var(--border-dashed);
+                border-radius: 10px;
+                color: var(--accent);
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition:
+                    border-color 0.15s,
+                    background 0.15s;
+            }
+            .add-btn:hover {
+                border-color: var(--accent);
+                background: var(--accent-bg);
+            }
+
+            /* ---- Modal overlay ---- */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.4);
+                z-index: 100;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-overlay.open {
+                display: flex;
+            }
+            .modal {
+                background: var(--modal-bg);
+                border-radius: 14px;
+                width: 92%;
+                max-width: 420px;
+                padding: 24px;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            }
+            .modal h2 {
+                margin-bottom: 16px;
+                font-size: 1.2rem;
+                color: var(--text);
+            }
+            .modal label {
+                display: block;
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                margin: 10px 0 4px;
+            }
+            .modal input,
+            .modal select {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--input-border);
+                border-radius: 8px;
+                font-size: 0.95rem;
+                background: var(--input-bg);
+                color: var(--text);
+                outline: none;
+                transition: border-color 0.15s;
+            }
+            .modal input:focus,
+            .modal select:focus {
+                border-color: var(--accent);
+            }
+            .modal-actions {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            .modal-actions button {
+                flex: 1;
+                padding: 11px;
+                border: none;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            .btn-primary {
+                background: var(--accent);
+                color: #fff;
+            }
+            .btn-primary:hover {
+                background: var(--accent-hover);
+            }
+            .btn-cancel {
+                background: var(--btn-cancel-bg);
+                color: var(--btn-cancel-text);
+            }
+            .btn-cancel:hover {
+                opacity: 0.85;
+            }
+            .modal .hint {
+                font-size: 0.78rem;
+                color: var(--text-muted);
+                margin-top: 4px;
+            }
+            .modal .error {
+                font-size: 0.82rem;
+                color: var(--danger);
+                margin-top: 8px;
+            }
+
+            /* ---- Lock screen ---- */
+            .lock-screen {
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 60vh;
+                text-align: center;
+                padding: 24px;
+            }
+            .lock-screen .lock-icon {
+                font-size: 3rem;
+                margin-bottom: 16px;
+            }
+            .lock-screen h2 {
+                margin-bottom: 8px;
+                color: var(--text);
+            }
+            .lock-screen p {
+                color: var(--text-muted);
+                margin-bottom: 24px;
+                font-size: 0.9rem;
+            }
+            .lock-screen button {
+                padding: 12px 32px;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                background: var(--accent);
+                color: #fff;
+                transition: background 0.15s;
+            }
+            .lock-screen button:hover {
+                background: var(--accent-hover);
+            }
+
+            /* ---- Toast notifications ---- */
+            .toast {
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%) translateY(20px);
+                background: var(--card-bg);
+                color: var(--text);
+                padding: 12px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px var(--card-shadow);
+                font-size: 0.9rem;
+                font-weight: 500;
+                opacity: 0;
+                visibility: hidden;
+                transition:
+                    opacity 0.3s,
+                    transform 0.3s,
+                    visibility 0.3s;
+                z-index: 1000;
+            }
+            .toast.show {
+                opacity: 1;
+                visibility: visible;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            /* ---- Responsive ---- */
+            @media (min-width: 1024px) {
+                .totp-code {
+                    font-size: 2.2rem;
+                    letter-spacing: 6px;
+                }
+                .account-name {
+                    font-size: 1.15rem;
+                }
+                .meta-countdown {
+                    font-size: 0.95rem;
+                }
+                .account-card {
+                    padding: 20px 32px;
+                }
+            }
+            @media (max-width: 480px) {
+                .topbar {
+                    padding: 10px 12px;
+                }
+                .topbar-left {
+                    gap: 6px;
+                }
+                .topbar-title {
+                    font-size: 0.95rem;
+                    flex-shrink: 1;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .topbar-version {
+                    font-size: 0.6rem;
+                    padding: 2px 6px;
+                }
+                .account-list {
+                    margin: 8px 8px;
+                }
+                .add-row {
+                    margin: 0 8px 16px;
+                }
+                .account-card {
+                    padding: 14px 16px;
+                }
+                .totp-code {
+                    font-size: 1.5rem;
+                    letter-spacing: 3px;
+                }
+                .modal {
+                    padding: 18px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Top bar -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <a
+                    href="https://github.com/johnwmail/totp-authenticator"
+                    target="_blank"
+                    rel="noopener"
+                    class="topbar-title"
+                    >TOTP Authenticator</a
+                >
+                <span class="topbar-version" id="appVersion">vDev</span>
             </div>
-            <label for="keyUrl">URL (optional)</label>
-            <input type="url" id="keyUrl" placeholder="https://example.com" />
-            <label for="keyAlgorithm">Algorithm</label>
-            <select id="keyAlgorithm">
-                <option value="SHA-1" selected>SHA-1</option>
-                <option value="SHA-256">SHA-256</option>
-                <option value="SHA-512">SHA-512</option>
-            </select>
-            <label for="keyPeriod">Period</label>
-            <select id="keyPeriod">
-                <option value="30" selected>30 seconds</option>
-                <option value="60">60 seconds</option>
-                <option value="300">5 minutes</option>
-                <option value="3600">1 hour</option>
-                <option value="86400">1 day</option>
-            </select>
-            <label for="keyDigits">Digits</label>
-            <select id="keyDigits">
-                <option value="6" selected>6 digits</option>
-                <option value="8">8 digits</option>
-            </select>
-            <div class="modal-actions">
-                <button class="btn-cancel" id="addKeyCancel" aria-label="Cancel adding account">Cancel</button>
-                <button class="btn-primary" id="addKeyButton" aria-label="Add account">Add</button>
+            <div class="topbar-actions">
+                <button
+                    id="themeBtn"
+                    class="hidden"
+                    title="Toggle dark mode"
+                    aria-label="Toggle dark mode"
+                >
+                    🌙
+                </button>
+                <button id="lockBtn" class="hidden" title="Encryption" aria-label="Encryption">
+                    🔒
+                </button>
+                <button
+                    id="resetBtn"
+                    class="hidden"
+                    title="Reset all accounts"
+                    aria-label="Reset all accounts"
+                >
+                    &#x1F5D1;
+                </button>
+                <button
+                    id="importBtn"
+                    class="hidden"
+                    title="Import accounts"
+                    aria-label="Import accounts"
+                >
+                    &#x21A5;
+                </button>
+                <button
+                    id="exportBtn"
+                    class="hidden"
+                    title="Export accounts"
+                    aria-label="Export accounts"
+                >
+                    &#x2913;
+                </button>
+                <button id="editBtn" title="Edit accounts" aria-label="Edit accounts">
+                    &#x2699;
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Unlock password modal -->
-    <div class="modal-overlay" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
-        <div class="modal">
-            <h2 id="pwTitle">Unlock Accounts</h2>
-            <label for="pwInput">Password</label>
-            <input type="password" id="pwInput" placeholder="Enter your password" aria-required="true" />
-            <div class="error" id="pwError" role="alert" aria-live="polite"></div>
-            <div class="modal-actions">
-                <button class="btn-cancel" id="pwCancel" aria-label="Cancel unlock">Cancel</button>
-                <button class="btn-primary" id="pwSubmit" aria-label="Unlock accounts">Unlock</button>
+        <!-- Lock screen -->
+        <div class="lock-screen" id="lockScreen">
+            <div class="lock-icon">🔒</div>
+            <h2>Accounts Locked</h2>
+            <p>Your accounts are encrypted. Enter your password to unlock.</p>
+            <button id="lockScreenUnlock">Unlock</button>
+        </div>
+
+        <!-- Account list -->
+        <div class="account-list" id="accounts"></div>
+
+        <!-- Add button (edit mode) -->
+        <div class="add-row" id="addRow" style="display: none">
+            <button class="add-btn" id="addBtn" aria-label="Add new account">+ Add Account</button>
+        </div>
+
+        <!-- Hidden file input for import -->
+        <input
+            type="file"
+            id="importFile"
+            accept=".json,.txt"
+            style="display: none"
+            aria-label="Import accounts file"
+        />
+
+        <!-- QR code modal -->
+        <div
+            class="qr-modal"
+            id="qrModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qrTitle"
+        >
+            <div class="qr-modal-content">
+                <h3 id="qrTitle"></h3>
+                <canvas id="qrCanvas"></canvas>
+                <div class="qr-uri" id="qrUri"></div>
+                <button class="qr-close-btn" id="qrClose" aria-label="Close QR code">Close</button>
             </div>
         </div>
-    </div>
 
-    <!-- Set/Change password modal -->
-    <div class="modal-overlay" id="setPwModal" role="dialog" aria-modal="true" aria-labelledby="setPwTitle">
-        <div class="modal">
-            <h2 id="setPwTitle">Set Encryption Password</h2>
-            <div class="hint" id="setPwHint">Encrypts accounts in localStorage with AES-GCM.</div>
-            <label for="setPwInput">New Password</label>
-            <input type="password" id="setPwInput" placeholder="Enter password" aria-required="true" />
-            <label for="setPwConfirm">Confirm Password</label>
-            <input type="password" id="setPwConfirm" placeholder="Confirm password" aria-required="true" />
-            <div class="error" id="setPwError" role="alert" aria-live="polite"></div>
-            <div class="modal-actions">
-                <button class="btn-cancel" id="setPwCancel" aria-label="Cancel setting password">Cancel</button>
-                <button class="btn-primary" id="setPwSubmit" aria-label="Set encryption password">Set Password</button>
+        <!-- Add/Edit account modal -->
+        <div
+            class="modal-overlay"
+            id="addModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modalTitle"
+        >
+            <div class="modal">
+                <h2 id="modalTitle">Add Account</h2>
+                <label for="keyIssuer">Issuer</label>
+                <input type="text" id="keyIssuer" placeholder="e.g. GitHub" aria-required="false" />
+                <label for="keyAccount">Account Name *</label>
+                <input
+                    type="text"
+                    id="keyAccount"
+                    placeholder="e.g. user@example.com"
+                    aria-required="true"
+                />
+                <label for="keySecret">Secret (base32) *</label>
+                <div style="display: flex; gap: 6px; align-items: center">
+                    <input
+                        type="text"
+                        id="keySecret"
+                        placeholder="4BVKJQZILWC46B2LT4CGT3ISFWZ4VYIP"
+                        style="flex: 1"
+                        aria-required="true"
+                    />
+                    <button
+                        type="button"
+                        id="regenSecret"
+                        title="Generate random secret"
+                        aria-label="Generate random secret"
+                        style="
+                            background: none;
+                            border: 1px solid var(--input-border);
+                            border-radius: 8px;
+                            padding: 8px 10px;
+                            cursor: pointer;
+                            font-size: 1.1rem;
+                            color: var(--accent);
+                            transition: background 0.15s;
+                            flex-shrink: 0;
+                        "
+                    >
+                        &#x21BB;
+                    </button>
+                </div>
+                <label for="keyUrl">URL (optional)</label>
+                <input type="url" id="keyUrl" placeholder="https://example.com" />
+                <label for="keyAlgorithm">Algorithm</label>
+                <select id="keyAlgorithm">
+                    <option value="SHA-1" selected>SHA-1</option>
+                    <option value="SHA-256">SHA-256</option>
+                    <option value="SHA-512">SHA-512</option>
+                </select>
+                <label for="keyPeriod">Period</label>
+                <select id="keyPeriod">
+                    <option value="30" selected>30 seconds</option>
+                    <option value="60">60 seconds</option>
+                    <option value="300">5 minutes</option>
+                    <option value="3600">1 hour</option>
+                    <option value="86400">1 day</option>
+                </select>
+                <label for="keyDigits">Digits</label>
+                <select id="keyDigits">
+                    <option value="6" selected>6 digits</option>
+                    <option value="8">8 digits</option>
+                </select>
+                <div class="modal-actions">
+                    <button class="btn-cancel" id="addKeyCancel" aria-label="Cancel adding account">
+                        Cancel
+                    </button>
+                    <button class="btn-primary" id="addKeyButton" aria-label="Add account">
+                        Add
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script src="lib/qrcode.js"></script>
-    <script src="js/totp-auth.js"></script>
-    <script src="js/app-init.js"></script>
-</body>
+        <!-- Unlock password modal -->
+        <div
+            class="modal-overlay"
+            id="passwordModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pwTitle"
+        >
+            <div class="modal">
+                <h2 id="pwTitle">Unlock Accounts</h2>
+                <label for="pwInput">Password</label>
+                <input
+                    type="password"
+                    id="pwInput"
+                    placeholder="Enter your password"
+                    aria-required="true"
+                />
+                <div class="error" id="pwError" role="alert" aria-live="polite"></div>
+                <div class="modal-actions">
+                    <button class="btn-cancel" id="pwCancel" aria-label="Cancel unlock">
+                        Cancel
+                    </button>
+                    <button class="btn-primary" id="pwSubmit" aria-label="Unlock accounts">
+                        Unlock
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Set/Change password modal -->
+        <div
+            class="modal-overlay"
+            id="setPwModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="setPwTitle"
+        >
+            <div class="modal">
+                <h2 id="setPwTitle">Set Encryption Password</h2>
+                <div class="hint" id="setPwHint">
+                    Encrypts accounts in localStorage with AES-GCM.
+                </div>
+                <label for="setPwInput">New Password</label>
+                <input
+                    type="password"
+                    id="setPwInput"
+                    placeholder="Enter password"
+                    aria-required="true"
+                />
+                <label for="setPwConfirm">Confirm Password</label>
+                <input
+                    type="password"
+                    id="setPwConfirm"
+                    placeholder="Confirm password"
+                    aria-required="true"
+                />
+                <div class="error" id="setPwError" role="alert" aria-live="polite"></div>
+                <div class="modal-actions">
+                    <button
+                        class="btn-cancel"
+                        id="setPwCancel"
+                        aria-label="Cancel setting password"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        class="btn-primary"
+                        id="setPwSubmit"
+                        aria-label="Set encryption password"
+                    >
+                        Set Password
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="lib/qrcode.js"></script>
+        <script src="js/totp-auth.js"></script>
+        <script src="js/app-init.js"></script>
+    </body>
 </html>
