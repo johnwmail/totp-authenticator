@@ -334,9 +334,9 @@ async function runRenderingRaceRegressionTest() {
                 innerHTML: ''
             };
         }
-    };
+};
 
-    globalThis.fetch = () => new Promise(resolve => { resolveFetch = resolve; });
+    globalThis.fetch = () => new Promise(res => { resolveFetch = res; });
     globalThis.setInterval = () => 1;
     globalThis.clearInterval = () => {};
 
