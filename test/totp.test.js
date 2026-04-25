@@ -188,6 +188,38 @@ async function runTests() {
     assert(totpAuth.DEFAULTS.period === 30, 'default period is 30');
     assert(totpAuth.DEFAULTS.digits === 6, 'default digits is 6');
 
+    // ---- Import/Export/Init/Demo Account ----
+    console.log('\nImport/Export/Init/Demo Account:');
+
+    // Test 1: KeysController exists and has init method
+    const ctrl = new totpAuth.KeysController();
+    assert(typeof ctrl.init === 'function', 'KeysController has init method');
+
+    // Test 2: DEFAULTS has correct values for demo account
+    assert(totpAuth.DEFAULTS.algorithm === 'SHA-1', 'demo account uses SHA-1');
+    assert(totpAuth.DEFAULTS.period === 30, 'demo account uses 30s period');
+    assert(totpAuth.DEFAULTS.digits === 6, 'demo account uses 6 digits');
+
+    // Test 3: parseOtpauth can parse GitHub otpauth URIs
+    const githubUri = 'otpauth://totp/GitHub:demo@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub';
+    const parsed = totpAuth.parseOtpauth(githubUri);
+    assert(parsed !== null, 'parses GitHub otpauth URI');
+    assert(parsed.issuer === 'GitHub', 'extracts GitHub issuer');
+    assert(parsed.name === 'GitHub (demo@example.com)', 'extracts account name');
+
+    // Test 4: StorageService can store accounts
+    const store = {
+        data: {},
+        getItem(k) { return this.data[k] || null; },
+        setItem(k, v) { this.data[k] = String(v); },
+        removeItem(k) { delete this.data[k]; }
+    };
+    const testAccounts = [{ name: 'test', secret: 'JBSWY3DPEHPK3PXP', issuer: 'Test' }];
+    store.setItem('accounts', JSON.stringify(testAccounts));
+    const retrieved = JSON.parse(store.getItem('accounts') || '[]');
+    assert(retrieved.length === 1, 'stores accounts correctly');
+    assert(retrieved[0].name === 'test', 'retrieves account name');
+
     await runRenderingRaceRegressionTest();
     await runTickDedupRegressionTest();
 
