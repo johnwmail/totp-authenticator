@@ -220,10 +220,14 @@ async function runTests() {
     assert(retrieved.length === 1, 'stores accounts correctly');
     assert(retrieved[0].name === 'test', 'retrieves account name');
 
-    // Test 5: parseOtpauth can export otpauth URIs
-    const exportUri = totpAuth.parseOtpauth('otpauth://totp/Test?secret=JBSWY3DPEHPK3PXP&issuer=Test');
-    assert(exportUri !== null, 'can parse otpauth for export');
-    assert(exportUri.secret === 'JBSWY3DPEHPK3PXP', 'parsed secret matches for export');
+    // Test 5: parseOtpauth can import from otpauth URI
+    const importUri = totpAuth.parseOtpauth('otpauth://totp/GitHub:user@email.com?secret=GEZDGNBVGY3TOQQ&issuer=GitHub&algorithm=SHA1&digits=6&period=30');
+    assert(importUri !== null, 'can parse otpauth for import');
+    assert(importUri.secret === 'GEZDGNBVGY3TOQQ', 'imports secret correctly');
+    assert(importUri.issuer === 'GitHub', 'imports issuer correctly');
+    assert(importUri.algorithm === 'SHA-1', 'imports algorithm correctly');
+    assert(importUri.digits === 6, 'imports digits correctly');
+    assert(importUri.period === 30, 'imports period correctly');
 
     await runRenderingRaceRegressionTest();
     await runTickDedupRegressionTest();
