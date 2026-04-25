@@ -7,16 +7,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: 'Deploy type'
-        required: true
-        default: 'none'
-        type: choice
-        options:
-          - none
-          - preview
-          - production
 
 jobs:
   test:
@@ -39,7 +29,7 @@ jobs:
   deploy-preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.deploy == 'preview')
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     needs: test
     permissions:
       contents: read
@@ -66,12 +56,12 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=totp --branch=${{ github.head_ref }} --commit-dirty=true
+          command: pages deploy . --project-name=totp --branch=preview --commit-dirty=true
 
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.deploy == 'production')
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     permissions:
       contents: read
