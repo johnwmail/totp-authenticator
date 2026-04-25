@@ -220,6 +220,11 @@ async function runTests() {
     assert(retrieved.length === 1, 'stores accounts correctly');
     assert(retrieved[0].name === 'test', 'retrieves account name');
 
+    // Test 5: parseOtpauth can export otpauth URIs
+    const exportUri = totpAuth.parseOtpauth('otpauth://totp/Test?secret=JBSWY3DPEHPK3PXP&issuer=Test');
+    assert(exportUri !== null, 'can parse otpauth for export');
+    assert(exportUri.secret === 'JBSWY3DPEHPK3PXP', 'parsed secret matches for export');
+
     await runRenderingRaceRegressionTest();
     await runTickDedupRegressionTest();
 
