@@ -310,6 +310,7 @@ async function runRenderingRaceRegressionTest() {
     const originalSetInterval = globalThis.setInterval;
     const originalClearInterval = globalThis.clearInterval;
 
+    let resolveFetch;
     const store = new Map();
     globalThis.Storage = function() {};
     globalThis.localStorage = {
@@ -318,6 +319,7 @@ async function runRenderingRaceRegressionTest() {
         removeItem(k) { store.delete(k); },
         clear() { store.clear(); }
     };
+    globalThis.fetch = () => new Promise(res => { resolveFetch = res; });
 
     globalThis.document = {
         documentElement: { setAttribute() {}, getAttribute() { return 'light'; } },
@@ -334,7 +336,6 @@ async function runRenderingRaceRegressionTest() {
         }
     };
 
-    let resolveFetch;
     globalThis.fetch = () => new Promise(resolve => { resolveFetch = resolve; });
     globalThis.setInterval = () => 1;
     globalThis.clearInterval = () => {};
