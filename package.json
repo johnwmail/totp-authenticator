@@ -1,6 +1,6 @@
 {
   "name": "totp-authenticator",
-  "version": "0.0.6",
+  "version": "vDev",
   "description": "A lightweight, self-hosted TOTP authenticator that runs entirely in the browser",
   "scripts": {
     "lint": "eslint js/*.js",
