@@ -1180,4 +1180,6 @@
 
     exports.KeysController = KeysController;
     exports.DEFAULTS = DEFAULTS;
+    exports.StorageService = StorageService;
+    exports.KeyUtilities = KeyUtilities;
 })(typeof exports === 'undefined' ? (this['totpAuth'] = {}) : exports);
