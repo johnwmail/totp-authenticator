@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [ main ]
+    tags: [ "v*" ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install dependencies
         run: npm ci
@@ -90,21 +90,18 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy . --project-name=totp --branch=main --commit-dirty=true
 
+      - name: Create release archives (zip/tar.gz)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          git archive --format=zip --output=totp-authenticator-${GITHUB_REF_NAME}.zip HEAD
+          git archive --format=tar.gz --output=totp-authenticator-${GITHUB_REF_NAME}.tar.gz HEAD
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            *.html
-            *.js
-            *.json
-            *.md
-            *.ico
-            LICENSE
-            js/
-            lib/
-            img/
-            img/*.png
-            img/*.svg
+            totp-authenticator-${{ github.ref_name }}.zip
+            totp-authenticator-${{ github.ref_name }}.tar.gz
           draft: false
           generate_release_notes: true
