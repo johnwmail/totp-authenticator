@@ -96,14 +96,14 @@ jobs:
           # Create a single tar archive from HEAD
           git archive --format=tar --output=totp-authenticator-${GITHUB_REF_NAME}.tar HEAD
 
-          set -x
           # Unpack, replace index.html, and create both zip and tar.gz
           TMPDIR=$(mktemp -d)
           tar -xf totp-authenticator-${GITHUB_REF_NAME}.tar -C "$TMPDIR"
-          cp index.html "$TMPDIR/index.html"
-          tar -czf totp-authenticator-${GITHUB_REF_NAME}.tar.gz -C "$TMPDIR" .
-          cd "$TMPDIR" && zip -r ../totp-authenticator-${GITHUB_REF_NAME}.zip .
-          ls -la
+          cp "$GITHUB_WORKSPACE/index.html" "$TMPDIR/index.html"
+          cd "$TMPDIR"
+          zip -r "$GITHUB_WORKSPACE/totp-authenticator-${GITHUB_REF_NAME}.zip" .
+          tar -czf "$GITHUB_WORKSPACE/totp-authenticator-${GITHUB_REF_NAME}.tar.gz" .
+          cd "$GITHUB_WORKSPACE" && rm -rf "$TMPDIR"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
