@@ -100,10 +100,8 @@ jobs:
           TMPDIR=$(mktemp -d)
           tar -xf totp-authenticator-${GITHUB_REF_NAME}.tar -C "$TMPDIR"
           cp index.html "$TMPDIR/index.html"
-          (cd "$TMPDIR" && zip -r ../totp-authenticator-${GITHUB_REF_NAME}.zip .)
           tar -czf totp-authenticator-${GITHUB_REF_NAME}.tar.gz -C "$TMPDIR" .
-          rm -rf "$TMPDIR"
-          rm totp-authenticator-${GITHUB_REF_NAME}.tar
+          cd "$TMPDIR" && zip -r ../totp-authenticator-${GITHUB_REF_NAME}.zip .
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
