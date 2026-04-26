@@ -104,5 +104,7 @@ jobs:
             js/
             lib/
             img/
+            img/*.png
+            img/*.svg
           draft: false
           generate_release_notes: true
