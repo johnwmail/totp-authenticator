@@ -1,38 +1,41 @@
 // Authenticator — per-account TOTP with configurable algorithm/period/digits
 // Uses native Web Crypto API (no external dependencies for crypto)
 // Based on original work by Gerard Braad (GPL-3.0)
+/* eslint-disable no-use-before-define */
 
 (function (exports) {
     'use strict';
 
-    var DEFAULTS = {
+    const DEFAULTS = {
         algorithm: 'SHA-1',
         period: 30,
         digits: 6
     };
 
     function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>"']/g, function (c) {
+        if (!str) {
+            return '';
+        }
+        return String(str).replace(/[&<>"']/g, c => {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
     }
 
     // ---- Storage with optional AES-GCM encryption ----
-    var StorageService = function () {
-        var KEYS = {
+    const StorageService = function () {
+        const KEYS = {
             plain: 'accounts',
             encrypted: 'accounts_encrypted',
             meta: 'accounts_meta'
         };
-        var aesKey = null; // derived CryptoKey when unlocked
+        let aesKey = null; // derived CryptoKey when unlocked
 
         function isSupported() {
             return typeof Storage !== 'undefined';
         }
 
         function getPlain(k) {
-            var v = localStorage.getItem(k);
+            const v = localStorage.getItem(k);
             return v && JSON.parse(v);
         }
         function setPlain(k, v) {
@@ -47,24 +50,26 @@
         }
 
         function randomBytes(n) {
-            var b = new Uint8Array(n);
+            const b = new Uint8Array(n);
             crypto.getRandomValues(b);
             return b;
         }
         function bufToBase64(buf) {
-            return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+            return btoa(String.fromCharCode(...new Uint8Array(buf)));
         }
         function base64ToBuf(b64) {
-            var s = atob(b64);
-            var b = new Uint8Array(s.length);
-            for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+            const s = atob(b64);
+            const b = new Uint8Array(s.length);
+            for (let i = 0; i < s.length; i++) {
+                b[i] = s.charCodeAt(i);
+            }
             return b;
         }
 
         async function deriveKey(password, salt, iterations) {
             iterations = iterations || 310000;
-            var enc = new TextEncoder();
-            var baseKey = await crypto.subtle.importKey(
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey(
                 'raw',
                 enc.encode(password),
                 'PBKDF2',
@@ -81,9 +86,9 @@
         }
 
         async function encrypt(data, key) {
-            var iv = randomBytes(12);
-            var enc = new TextEncoder();
-            var ct = await crypto.subtle.encrypt(
+            const iv = randomBytes(12);
+            const enc = new TextEncoder();
+            const ct = await crypto.subtle.encrypt(
                 { name: 'AES-GCM', iv: iv },
                 key,
                 enc.encode(JSON.stringify(data))
@@ -92,14 +97,14 @@
         }
 
         async function decrypt(payload, key) {
-            var iv = base64ToBuf(payload.iv);
-            var ct = base64ToBuf(payload.ct);
-            var plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+            const iv = base64ToBuf(payload.iv);
+            const ct = base64ToBuf(payload.ct);
+            const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
             return JSON.parse(new TextDecoder().decode(plain));
         }
 
         async function setPassword(password) {
-            var accounts = await getAccounts();
+            const accounts = await getAccounts();
             if (!password) {
                 // Remove encryption
                 aesKey = null;
@@ -108,24 +113,26 @@
                 setPlain(KEYS.plain, accounts);
                 return;
             }
-            var salt = randomBytes(16);
-            var iterations = 310000;
+            const salt = randomBytes(16);
+            const iterations = 310000;
             aesKey = await deriveKey(password, salt, iterations);
-            var meta = { salt: bufToBase64(salt), iter: iterations };
+            const meta = { salt: bufToBase64(salt), iter: iterations };
             localStorage.setItem(KEYS.meta, JSON.stringify(meta));
             localStorage.removeItem(KEYS.plain);
-            var payload = await encrypt(accounts, aesKey);
+            const payload = await encrypt(accounts, aesKey);
             localStorage.setItem(KEYS.encrypted, JSON.stringify(payload));
         }
 
         async function unlock(password) {
-            var metaStr = localStorage.getItem(KEYS.meta);
-            if (!metaStr) return true; // not encrypted
-            var meta = JSON.parse(metaStr);
-            var salt = base64ToBuf(meta.salt);
+            const metaStr = localStorage.getItem(KEYS.meta);
+            if (!metaStr) {
+                return true;
+            } // not encrypted
+            const meta = JSON.parse(metaStr);
+            const salt = base64ToBuf(meta.salt);
             try {
-                var key = await deriveKey(password, salt, meta.iter);
-                var payloadStr = localStorage.getItem(KEYS.encrypted);
+                const key = await deriveKey(password, salt, meta.iter);
+                const payloadStr = localStorage.getItem(KEYS.encrypted);
                 if (!payloadStr) {
                     aesKey = key;
                     return true;
@@ -144,9 +151,13 @@
 
         async function getAccounts() {
             if (isEncrypted()) {
-                if (!aesKey) return null; // locked
-                var payloadStr = localStorage.getItem(KEYS.encrypted);
-                if (!payloadStr) return [];
+                if (!aesKey) {
+                    return null;
+                } // locked
+                const payloadStr = localStorage.getItem(KEYS.encrypted);
+                if (!payloadStr) {
+                    return [];
+                }
                 try {
                     return await decrypt(JSON.parse(payloadStr), aesKey);
                 } catch (e) {
@@ -158,7 +169,7 @@
 
         async function saveAccounts(accounts) {
             if (isEncrypted() && aesKey) {
-                var payload = await encrypt(accounts, aesKey);
+                const payload = await encrypt(accounts, aesKey);
                 localStorage.setItem(KEYS.encrypted, JSON.stringify(payload));
                 localStorage.removeItem(KEYS.plain);
             } else {
@@ -195,100 +206,102 @@
     };
 
     // ---- TOTP (native Web Crypto API) ----
-    var KeyUtilities = function () {
-        var dec2hex = function (s) {
+    const KeyUtilities = function () {
+        const dec2hex = function (s) {
             return (s < 15.5 ? '0' : '') + Math.round(s).toString(16);
         };
-        var hex2dec = function (s) {
+        const hex2dec = function (s) {
             return parseInt(s, 16);
         };
-        var leftpad = function (str, len, pad) {
-            if (len + 1 >= str.length) str = new Array(len + 1 - str.length).join(pad) + str;
+        const leftpad = function (str, len, pad) {
+            if (len + 1 >= str.length) {
+                str = new Array(len + 1 - str.length).join(pad) + str;
+            }
             return str;
         };
-        var base32tohex = function (b32) {
-            var c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
-                bits = '',
-                hex = '';
-            for (var i = 0; i < b32.length; i++) {
-                var v = c.indexOf(b32.charAt(i).toUpperCase());
-                if (v >= 0) bits += leftpad(v.toString(2), 5, '0');
+        const base32tohex = function (b32) {
+            const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            let bits = '';
+            let hex = '';
+            for (let i = 0; i < b32.length; i++) {
+                const v = c.indexOf(b32.charAt(i).toUpperCase());
+                if (v >= 0) {
+                    bits += leftpad(v.toString(2), 5, '0');
+                }
             }
-            for (var j = 0; j + 4 <= bits.length; j += 4)
-                hex += parseInt(bits.substr(j, 4), 2).toString(16);
+            for (let j = 0; j + 4 <= bits.length; j += 4) {
+                hex += parseInt(bits.substring(j, j + 4), 2).toString(16);
+            }
             return hex;
         };
-        var hexToUint8Array = function (hex) {
-            var bytes = new Uint8Array(hex.length / 2);
-            for (var i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+        const hexToUint8Array = function (hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+            }
             return bytes;
         };
 
         return {
             generate: async function (secret, opts) {
                 opts = opts || {};
-                var algo = opts.algorithm || DEFAULTS.algorithm;
-                var period = opts.period || DEFAULTS.period;
-                var digits = opts.digits || DEFAULTS.digits;
-                var key = base32tohex(secret);
-                if (key.length % 2 !== 0) key += '0';
-                var epoch = opts.epoch || Math.round(Date.now() / 1000);
-                var time = leftpad(dec2hex(Math.floor(epoch / period)), 16, '0');
+                const algo = opts.algorithm || DEFAULTS.algorithm;
+                const period = opts.period || DEFAULTS.period;
+                const digits = opts.digits || DEFAULTS.digits;
+                let key = base32tohex(secret);
+                if (key.length % 2 !== 0) {
+                    key += '0';
+                }
+                const epoch = opts.epoch || Math.round(Date.now() / 1000);
+                const time = leftpad(dec2hex(Math.floor(epoch / period)), 16, '0');
 
-                var keyBytes = hexToUint8Array(key);
-                var timeBytes = hexToUint8Array(time);
+                const keyBytes = hexToUint8Array(key);
+                const timeBytes = hexToUint8Array(time);
 
-                var cryptoKey = await crypto.subtle.importKey(
+                const cryptoKey = await crypto.subtle.importKey(
                     'raw',
                     keyBytes,
                     { name: 'HMAC', hash: { name: algo } },
                     false,
                     ['sign']
                 );
-                var sig = await crypto.subtle.sign('HMAC', cryptoKey, timeBytes);
-                var hmacBytes = new Uint8Array(sig);
+                const sig = await crypto.subtle.sign('HMAC', cryptoKey, timeBytes);
+                const hmacBytes = new Uint8Array(sig);
 
-                var hmac = '';
-                for (var i = 0; i < hmacBytes.length; i++)
+                let hmac = '';
+                for (let i = 0; i < hmacBytes.length; i++) {
                     hmac += ('0' + hmacBytes[i].toString(16)).slice(-2);
+                }
 
-                var off = hex2dec(hmac.substring(hmac.length - 1));
-                var otp = (hex2dec(hmac.substr(off * 2, 8)) & hex2dec('7fffffff')) + '';
-                return leftpad(otp.substr(otp.length - digits, digits), digits, '0');
+                const off = hex2dec(hmac.substring(hmac.length - 1));
+                const otp =
+                    (hex2dec(hmac.substring(off * 2, off * 2 + 8)) & hex2dec('7fffffff')) + '';
+                return leftpad(otp.substring(otp.length - digits), digits, '0');
             }
         };
     };
 
     // ---- Helpers ----
-    function periodLabel(p) {
-        if (p >= 86400) return p / 86400 + 'd';
-        if (p >= 3600) return p / 3600 + 'h';
-        if (p >= 60) return p / 60 + 'm';
-        return p + 's';
-    }
-    function algoLabel(a) {
-        return a.replace('SHA-', 'S');
-    }
 
     function generateRandomSecret(length) {
         length = length || 32;
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-        var arr = new Uint8Array(length);
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        const arr = new Uint8Array(length);
         crypto.getRandomValues(arr);
-        var secret = '';
-        for (var i = 0; i < length; i++) {
+        let secret = '';
+        for (let i = 0; i < length; i++) {
             secret += chars[arr[i] % 32];
         }
         return secret;
     }
 
-    var clipboardClearTimer = null;
-    var lastCopiedValue = null;
+    let clipboardClearTimer = null;
+    let lastCopiedValue = null;
 
     function copyToClipboard(text, el) {
-        navigator.clipboard.writeText(text).then(function () {
+        navigator.clipboard.writeText(text).then(() => {
             el.classList.add('copied');
-            setTimeout(function () {
+            setTimeout(() => {
                 el.classList.remove('copied');
             }, 1200);
             lastCopiedValue = text;
@@ -296,26 +309,26 @@
                 clearTimeout(clipboardClearTimer);
             }
             // Clear clipboard after 30 seconds for security (only if value is unchanged)
-            clipboardClearTimer = setTimeout(function () {
+            clipboardClearTimer = setTimeout(() => {
                 if (!navigator.clipboard.readText) {
                     showToast('Clipboard auto-clear unavailable');
                     return;
                 }
                 navigator.clipboard
                     .readText()
-                    .then(function (currentValue) {
+                    .then(currentValue => {
                         if (currentValue === lastCopiedValue) {
                             navigator.clipboard
                                 .writeText('')
-                                .then(function () {
+                                .then(() => {
                                     showToast('Clipboard cleared');
                                 })
-                                .catch(function () {
+                                .catch(() => {
                                     showToast('Clipboard clear attempted');
                                 });
                         }
                     })
-                    .catch(function () {
+                    .catch(() => {
                         showToast('Clipboard auto-clear unavailable');
                     });
             }, 30000);
@@ -324,12 +337,12 @@
 
     function showToast(message) {
         // Remove existing toast if any
-        var existingToast = document.querySelector('.toast');
+        const existingToast = document.querySelector('.toast');
         if (existingToast) {
             existingToast.remove();
         }
         // Create toast element
-        var toast = document.createElement('div');
+        const toast = document.createElement('div');
         toast.className = 'toast';
         toast.setAttribute('role', 'status');
         toast.setAttribute('aria-live', 'polite');
@@ -340,9 +353,9 @@
         void toast.offsetWidth;
         toast.classList.add('show');
         // Auto-remove after 2 seconds
-        setTimeout(function () {
+        setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(function () {
+            setTimeout(() => {
                 toast.remove();
             }, 300);
         }, 2000);
@@ -351,30 +364,38 @@
     // Parse otpauth:// URI
     function parseOtpauth(uri) {
         uri = uri.trim();
-        if (uri.indexOf('otpauth://') !== 0) return null;
+        if (uri.indexOf('otpauth://') !== 0) {
+            return null;
+        }
         try {
-            var url = new URL(uri);
-            var path = decodeURIComponent(url.pathname);
-            var name = path
+            const url = new URL(uri);
+            const path = decodeURIComponent(url.pathname);
+            let name = path
                 .replace(/^\/totp\//, '')
                 .replace(/^\/hotp\//, '')
                 .replace(/^\//, '');
-            var issuer = url.searchParams.get('issuer');
+            const issuer = url.searchParams.get('issuer');
             if (issuer && name.indexOf(issuer + ':') === 0) {
-                name = issuer + ' (' + name.substring(issuer.length + 1).trim() + ')';
+                name = `${issuer} (${name.substring(issuer.length + 1).trim()})`;
             } else if (issuer && issuer !== name && name.indexOf(':') === -1) {
-                name = issuer + ' (' + name + ')';
+                name = `${issuer} (${name})`;
             }
-            var secret = (url.searchParams.get('secret') || '').toUpperCase().replace(/\s/g, '');
-            var algoParam = (url.searchParams.get('algorithm') || '')
+            const secret = (url.searchParams.get('secret') || '').toUpperCase().replace(/\s/g, '');
+            const algoParam = (url.searchParams.get('algorithm') || '')
                 .toUpperCase()
                 .replace('-', '');
-            var algorithm = DEFAULTS.algorithm;
-            if (algoParam === 'SHA1') algorithm = 'SHA-1';
-            if (algoParam === 'SHA256') algorithm = 'SHA-256';
-            if (algoParam === 'SHA512') algorithm = 'SHA-512';
-            var period = parseInt(url.searchParams.get('period'), 10) || DEFAULTS.period;
-            var digits = parseInt(url.searchParams.get('digits'), 10) || DEFAULTS.digits;
+            let algorithm = DEFAULTS.algorithm;
+            if (algoParam === 'SHA1') {
+                algorithm = 'SHA-1';
+            }
+            if (algoParam === 'SHA256') {
+                algorithm = 'SHA-256';
+            }
+            if (algoParam === 'SHA512') {
+                algorithm = 'SHA-512';
+            }
+            const period = parseInt(url.searchParams.get('period'), 10) || DEFAULTS.period;
+            const digits = parseInt(url.searchParams.get('digits'), 10) || DEFAULTS.digits;
             return {
                 name: name,
                 secret: secret,
@@ -395,33 +416,39 @@
     }
 
     // ---- Controller ----
-    var KeysController = function () {
-        var store,
+    const KeysController = function () {
+        let store,
             keys,
             editing = false;
-        var editIndex = -1;
-        var renderToken = 0;
-        var tickTimer = null;
-        var lastRenderedAt = 0;
-        var lastCodeStepByIndex = {};
+        let editIndex = -1;
+        let renderToken = 0;
+        let tickTimer = null;
+        let lastRenderedAt = 0;
+        let lastCodeStepByIndex = {};
 
-        var $ = function (sel) {
+        const $ = function (sel) {
             return document.querySelector(sel);
         };
 
-        var startTicker = function () {
-            if (tickTimer) clearInterval(tickTimer);
+        const startTicker = function () {
+            if (tickTimer) {
+                clearInterval(tickTimer);
+            }
             tickTimer = setInterval(tick, 1000);
         };
 
-        var stopTicker = function () {
-            if (tickTimer) clearInterval(tickTimer);
+        const stopTicker = function () {
+            if (tickTimer) {
+                clearInterval(tickTimer);
+            }
             tickTimer = null;
         };
 
-        var addFallbackAccount = async function () {
-            var accounts = await store.getAccounts();
-            if (accounts === null || accounts.length > 0) return;
+        const addFallbackAccount = async function () {
+            const accounts = await store.getAccounts();
+            if (accounts === null || accounts.length > 0) {
+                return;
+            }
             await store.saveAccounts([
                 {
                     name: 'demo@example.com',
@@ -436,31 +463,39 @@
             await render();
         };
 
-        var stripJsonComments = function (text) {
+        const stripJsonComments = function (text) {
             return text.replace(/^\s*\/\/.*$/gm, '').replace(/^\s*#.*$/gm, '');
         };
 
-        var loadDefaultAccounts = async function () {
+        const loadDefaultAccounts = async function () {
             try {
-                var existing = await store.getAccounts();
-                if (existing === null || existing.length > 0) return;
+                let existing = await store.getAccounts();
+                if (existing === null || existing.length > 0) {
+                    return;
+                }
 
                 if (typeof navigator !== 'undefined' && navigator.onLine === false) {
                     await addFallbackAccount();
                     return;
                 }
 
-                var res = await fetch('accounts.json');
-                if (!res.ok) throw new Error('not found');
+                const res = await fetch('accounts.json');
+                if (!res.ok) {
+                    throw new Error('not found');
+                }
 
-                var text = await res.text();
-                if (looksLikeHtmlDocument(text)) throw new Error('not json');
-                var arr = JSON.parse(stripJsonComments(text));
-                if (!arr || !Array.isArray(arr) || arr.length === 0) throw new Error('empty');
+                const text = await res.text();
+                if (looksLikeHtmlDocument(text)) {
+                    throw new Error('not json');
+                }
+                const arr = JSON.parse(stripJsonComments(text));
+                if (!arr || !Array.isArray(arr) || arr.length === 0) {
+                    throw new Error('empty');
+                }
 
-                var imported = [];
-                for (var i = 0; i < arr.length; i++) {
-                    var item = arr[i];
+                const imported = [];
+                for (let i = 0; i < arr.length; i++) {
+                    const item = arr[i];
                     if (item.secret) {
                         imported.push({
                             name: item.name || 'Imported',
@@ -472,7 +507,7 @@
                             issuer: item.issuer || ''
                         });
                     } else if (item.otpauth) {
-                        var parsed = parseOtpauth(item.otpauth);
+                        const parsed = parseOtpauth(item.otpauth);
                         if (parsed) {
                             imported.push({
                                 name: parsed.name,
@@ -493,7 +528,9 @@
                 }
 
                 existing = await store.getAccounts();
-                if (existing === null || existing.length > 0) return;
+                if (existing === null || existing.length > 0) {
+                    return;
+                }
                 await store.saveAccounts(imported);
                 await render();
             } catch (e) {
@@ -501,54 +538,66 @@
             }
         };
 
-        var init = async function () {
+        const init = async function () {
             store = new StorageService();
             keys = new KeyUtilities();
 
-            if (!store.isSupported()) return;
+            if (!store.isSupported()) {
+                return;
+            }
 
             // Bind UI
             $('#editBtn').addEventListener('click', toggleEdit);
             $('#exportBtn').addEventListener('click', exportAccounts);
-            $('#importBtn').addEventListener('click', function () {
+            $('#importBtn').addEventListener('click', () => {
                 $('#importFile').click();
             });
             $('#importFile').addEventListener('change', importAccounts);
             $('#resetBtn').addEventListener('click', resetAccounts);
-            $('#addBtn').addEventListener('click', function () {
+            $('#addBtn').addEventListener('click', () => {
                 $('#keySecret').value = generateRandomSecret();
                 $('#addModal').classList.add('open');
             });
-            $('#regenSecret').addEventListener('click', function () {
+            $('#regenSecret').addEventListener('click', () => {
                 $('#keySecret').value = generateRandomSecret();
             });
             $('#addKeyCancel').addEventListener('click', closeModal);
             $('#addKeyButton').addEventListener('click', onSave);
-            $('#addModal').addEventListener('click', function (e) {
-                if (e.target === $('#addModal')) closeModal();
+            $('#addModal').addEventListener('click', e => {
+                if (e.target === $('#addModal')) {
+                    closeModal();
+                }
             });
 
             // QR modal
             $('#qrClose').addEventListener('click', closeQR);
-            $('#qrModal').addEventListener('click', function (e) {
-                if (e.target === $('#qrModal')) closeQR();
+            $('#qrModal').addEventListener('click', e => {
+                if (e.target === $('#qrModal')) {
+                    closeQR();
+                }
             });
 
             // Encryption UI
-            $('#lockScreenUnlock').addEventListener('click', function () {
+            $('#lockScreenUnlock').addEventListener('click', () => {
                 openPasswordModal('unlock');
             });
             $('#lockBtn').addEventListener('click', onLockToggle);
-            $('#passwordModal').addEventListener('click', function (e) {
-                if (e.target === $('#passwordModal')) closePasswordModal();
+            $('#passwordModal').addEventListener('click', e => {
+                if (e.target === $('#passwordModal')) {
+                    closePasswordModal();
+                }
             });
             $('#pwCancel').addEventListener('click', closePasswordModal);
             $('#pwSubmit').addEventListener('click', onPasswordSubmit);
-            $('#pwInput').addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') onPasswordSubmit();
+            $('#pwInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    onPasswordSubmit();
+                }
             });
-            $('#setPwModal').addEventListener('click', function (e) {
-                if (e.target === $('#setPwModal')) closeSetPwModal();
+            $('#setPwModal').addEventListener('click', e => {
+                if (e.target === $('#setPwModal')) {
+                    closeSetPwModal();
+                }
             });
             $('#setPwCancel').addEventListener('click', closeSetPwModal);
             $('#setPwSubmit').addEventListener('click', onSetPasswordSubmit);
@@ -571,29 +620,31 @@
         };
 
         // ---- Theme (auto-detect by local time: 08:00–22:00 = light) ----
-        var manualTheme = null; // manual override for current session
+        let manualTheme = null; // manual override for current session
 
-        var getTimeBasedTheme = function () {
-            var hour = new Date().getHours();
+        const getTimeBasedTheme = function () {
+            const hour = new Date().getHours();
             return hour >= 8 && hour < 22 ? 'light' : 'dark';
         };
 
-        var toggleTheme = function () {
-            var current =
+        const toggleTheme = function () {
+            const current =
                 document.documentElement.getAttribute('data-theme') || getTimeBasedTheme();
             manualTheme = current === 'dark' ? 'light' : 'dark';
             applyTheme();
         };
 
-        var applyTheme = function () {
-            var theme = manualTheme || getTimeBasedTheme();
+        const applyTheme = function () {
+            const theme = manualTheme || getTimeBasedTheme();
             document.documentElement.setAttribute('data-theme', theme);
-            var btn = $('#themeBtn');
-            if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+            const btn = $('#themeBtn');
+            if (btn) {
+                btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
         };
 
         // ---- Encryption UI ----
-        var showLockScreen = function () {
+        const showLockScreen = function () {
             stopTicker();
             $('#lockScreen').style.display = 'flex';
             $('#accounts').style.display = 'none';
@@ -601,12 +652,13 @@
             updateLockIcon();
         };
 
-        var hideLockScreen = function () {
+        const hideLockScreen = function () {
             $('#lockScreen').style.display = 'none';
             $('#accounts').style.display = '';
+            $('#addRow').style.display = editing ? '' : 'none';
         };
 
-        var onLockToggle = function () {
+        const onLockToggle = function () {
             if (store.isEncrypted() && store.isUnlocked()) {
                 // Lock it
                 store.lock();
@@ -617,9 +669,11 @@
             }
         };
 
-        var updateLockIcon = function () {
-            var btn = $('#lockBtn');
-            if (!btn) return;
+        const updateLockIcon = function () {
+            const btn = $('#lockBtn');
+            if (!btn) {
+                return;
+            }
             if (store.isEncrypted()) {
                 btn.textContent = store.isUnlocked() ? '🔓' : '🔒';
                 btn.title = store.isUnlocked() ? 'Lock accounts' : 'Unlock accounts';
@@ -632,9 +686,9 @@
         };
 
         // Unlock modal
-        var passwordAction = ''; // 'unlock'
+        let passwordAction = ''; // 'unlock'
 
-        var openPasswordModal = function (action) {
+        const openPasswordModal = function (action) {
             passwordAction = action;
             $('#pwInput').value = '';
             $('#pwError').textContent = '';
@@ -643,25 +697,25 @@
                 $('#pwSubmit').textContent = 'Unlock';
             }
             $('#passwordModal').classList.add('open');
-            setTimeout(function () {
+            setTimeout(() => {
                 $('#pwInput').focus();
             }, 100);
         };
 
-        var closePasswordModal = function () {
+        const closePasswordModal = function () {
             $('#passwordModal').classList.remove('open');
             $('#pwInput').value = '';
             $('#pwError').textContent = '';
         };
 
-        var onPasswordSubmit = async function () {
-            var pw = $('#pwInput').value;
+        const onPasswordSubmit = async function () {
+            const pw = $('#pwInput').value;
             if (!pw) {
                 $('#pwInput').focus();
                 return;
             }
             if (passwordAction === 'unlock') {
-                var ok = await store.unlock(pw);
+                const ok = await store.unlock(pw);
                 if (ok) {
                     closePasswordModal();
                     hideLockScreen();
@@ -676,7 +730,7 @@
         };
 
         // Set password modal
-        var openSetPassword = function () {
+        const openSetPassword = function () {
             $('#setPwInput').value = '';
             $('#setPwConfirm').value = '';
             $('#setPwError').textContent = '';
@@ -688,18 +742,18 @@
                 $('#setPwHint').textContent = 'Encrypts accounts in localStorage with AES-GCM.';
             }
             $('#setPwModal').classList.add('open');
-            setTimeout(function () {
+            setTimeout(() => {
                 $('#setPwInput').focus();
             }, 100);
         };
 
-        var closeSetPwModal = function () {
+        const closeSetPwModal = function () {
             $('#setPwModal').classList.remove('open');
         };
 
-        var onSetPasswordSubmit = async function () {
-            var pw = $('#setPwInput').value;
-            var confirm = $('#setPwConfirm').value;
+        const onSetPasswordSubmit = async function () {
+            const pw = $('#setPwInput').value;
+            const confirm = $('#setPwConfirm').value;
             if (pw && pw !== confirm) {
                 $('#setPwError').textContent = 'Passwords do not match';
                 return;
@@ -711,37 +765,45 @@
         };
 
         // ---- Drag and Drop ----
-        var dragFromIdx = -1;
+        let dragFromIdx = -1;
 
-        var onDragStart = function (e) {
-            var card = e.target.closest('.account-card');
-            if (!card || !editing) return;
+        const onDragStart = function (e) {
+            const card = e.target.closest('.account-card');
+            if (!card || !editing) {
+                return;
+            }
             dragFromIdx = parseInt(card.getAttribute('data-idx'), 10);
             card.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
         };
 
-        var onDragOver = function (e) {
-            if (dragFromIdx < 0 || !editing) return;
+        const onDragOver = function (e) {
+            if (dragFromIdx < 0 || !editing) {
+                return;
+            }
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            var card = e.target.closest('.account-card');
+            const card = e.target.closest('.account-card');
             if (card) {
                 // Remove highlight from all
-                var cards = document.querySelectorAll('.account-card');
-                for (var i = 0; i < cards.length; i++) cards[i].classList.remove('drag-over');
+                const cards = document.querySelectorAll('.account-card');
+                for (let i = 0; i < cards.length; i++) {
+                    cards[i].classList.remove('drag-over');
+                }
                 card.classList.add('drag-over');
             }
         };
 
-        var onDrop = async function (e) {
+        const onDrop = async function (e) {
             e.preventDefault();
-            var card = e.target.closest('.account-card');
-            if (!card || dragFromIdx < 0) return;
-            var toIdx = parseInt(card.getAttribute('data-idx'), 10);
+            const card = e.target.closest('.account-card');
+            if (!card || dragFromIdx < 0) {
+                return;
+            }
+            const toIdx = parseInt(card.getAttribute('data-idx'), 10);
             if (dragFromIdx !== toIdx) {
-                var accounts = (await store.getAccounts()) || [];
-                var item = accounts.splice(dragFromIdx, 1)[0];
+                const accounts = (await store.getAccounts()) || [];
+                const item = accounts.splice(dragFromIdx, 1)[0];
                 accounts.splice(toIdx, 0, item);
                 await store.saveAccounts(accounts);
                 await render();
@@ -749,112 +811,90 @@
             cleanupDrag();
         };
 
-        var onDragEnd = function () {
+        const onDragEnd = function () {
             cleanupDrag();
         };
 
-        var cleanupDrag = function () {
+        const cleanupDrag = function () {
             dragFromIdx = -1;
-            var cards = document.querySelectorAll('.account-card');
-            for (var i = 0; i < cards.length; i++) {
+            const cards = document.querySelectorAll('.account-card');
+            for (let i = 0; i < cards.length; i++) {
                 cards[i].classList.remove('dragging', 'drag-over');
             }
         };
 
         // ---- Render ----
-        var render = async function () {
+        const render = async function () {
             return renderAt(Math.round(Date.now() / 1000));
         };
 
-        var renderAt = async function (now) {
-            var list = $('#accounts');
-            var token = ++renderToken;
-            var accounts = await store.getAccounts();
-            if (token !== renderToken) return;
+        const renderAt = async function (now) {
+            const list = $('#accounts');
+            const token = ++renderToken;
+            const accounts = await store.getAccounts();
+            if (token !== renderToken) {
+                return;
+            }
 
             list.innerHTML = '';
-            if (accounts === null) return; // locked
+            if (accounts === null) {
+                return;
+            } // locked
             lastRenderedAt = now;
             lastCodeStepByIndex = {};
 
-            for (var _i = 0; _i < accounts.length; _i++) {
-                var acc = accounts[_i];
-                var i = _i;
-                var algo = acc.algorithm || DEFAULTS.algorithm;
-                var period = acc.period || DEFAULTS.period;
-                var digits = acc.digits || DEFAULTS.digits;
-                var code = await keys.generate(acc.secret, {
+            for (let _i = 0; _i < accounts.length; _i++) {
+                const acc = accounts[_i];
+                const i = _i;
+                const algo = acc.algorithm || DEFAULTS.algorithm;
+                const period = acc.period || DEFAULTS.period;
+                const digits = acc.digits || DEFAULTS.digits;
+                const code = await keys.generate(acc.secret, {
                     algorithm: algo,
                     period: period,
                     digits: digits
                 });
-                if (token !== renderToken) return;
-                var cd = period - (now % period);
+                if (token !== renderToken) {
+                    return;
+                }
+                const cd = period - (now % period);
 
-                var card = document.createElement('div');
+                const card = document.createElement('div');
                 card.className = 'account-card';
                 card.setAttribute('data-idx', i);
                 card.setAttribute('data-period', period);
                 lastCodeStepByIndex[i] = Math.floor(now / period);
-                if (editing) card.setAttribute('draggable', 'true');
+                if (editing) {
+                    card.setAttribute('draggable', 'true');
+                }
 
-                var displayName = acc.issuer
-                    ? escapeHtml(acc.issuer) + (acc.name ? ' (' + escapeHtml(acc.name) + ')' : '')
+                const displayName = acc.issuer
+                    ? `${escapeHtml(acc.issuer)}${acc.name ? ` (${escapeHtml(acc.name)})` : ''}`
                     : escapeHtml(acc.name);
-                var nameHtml = acc.url
-                    ? '<a href="' +
-                      escapeHtml(acc.url) +
-                      '" target="_blank" rel="noopener noreferrer">' +
-                      displayName +
-                      '</a>'
+                const nameHtml = acc.url
+                    ? `<a href="${escapeHtml(acc.url)}" target="_blank" rel="noopener noreferrer">${displayName}</a>`
                     : displayName;
 
-                var extras = [];
-                if (algo !== DEFAULTS.algorithm) extras.push(algoLabel(algo));
-                if (digits !== DEFAULTS.digits) extras.push(digits + 'd');
-                var extraHtml = extras.length
-                    ? '<span class="meta-sep">\u00b7</span><span class="meta-extra">' +
-                      extras.join(' \u00b7 ') +
-                      '</span>'
-                    : '';
-
-                var actionsHtml = '<div class="card-actions">';
-                actionsHtml +=
-                    '<button class="qr-btn" data-idx="' +
-                    i +
-                    '" title="Show QR code"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg></button>';
+                let actionsHtml = '<div class="card-actions">';
+                actionsHtml += `<button class="qr-btn" data-idx="${i}" title="Show QR code"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg></button>`;
                 if (editing) {
                     actionsHtml += '<button class="drag-handle" title="Drag to reorder">≡</button>';
-                    actionsHtml +=
-                        '<button class="edit-btn" data-idx="' +
-                        i +
-                        '" title="Edit">&#x270E;</button>';
-                    actionsHtml +=
-                        '<button class="delete-btn" data-idx="' +
-                        i +
-                        '" title="Delete">&times;</button>';
+                    actionsHtml += `<button class="edit-btn" data-idx="${i}" title="Edit">&#x270E;</button>`;
+                    actionsHtml += `<button class="delete-btn" data-idx="${i}" title="Delete">&times;</button>`;
                 }
                 actionsHtml += '</div>';
 
                 card.innerHTML =
                     '<div class="account-info">' +
-                    '<div class="totp-code" data-code="' +
-                    code +
-                    '">' +
-                    code +
-                    '<span class="copy-tip">Copied!</span></div>' +
+                    `<div class="totp-code" data-code="${code}">${code}<span class="copy-tip">Copied!</span></div>` +
                     '<div class="account-meta">' +
-                    '<span class="account-name">' +
-                    nameHtml +
-                    '</span>' +
-                    ' <span class="meta-countdown">' +
-                    cd +
-                    's</span>' +
+                    `<span class="account-name">${nameHtml}</span>` +
+                    ` <span class="meta-countdown">${cd}s</span>` +
                     '</div>' +
                     '</div>' +
                     actionsHtml;
 
-                var codeEl = card.querySelector('.totp-code');
+                const codeEl = card.querySelector('.totp-code');
                 codeEl.addEventListener('click', function (e) {
                     e.preventDefault();
                     copyToClipboard(this.getAttribute('data-code'), this);
@@ -882,7 +922,7 @@
             updateLockIcon();
         };
 
-        var toggleEdit = function () {
+        const toggleEdit = function () {
             editing = !editing;
             $('#editBtn').classList.toggle('active', editing);
             $('#themeBtn').classList.toggle('hidden', !editing);
@@ -894,25 +934,27 @@
             render();
         };
 
-        var buildOtpauth = function (acc) {
-            var algo = acc.algorithm || DEFAULTS.algorithm;
-            var period = acc.period || DEFAULTS.period;
-            var digits = acc.digits || DEFAULTS.digits;
-            var issuer = acc.issuer || '';
-            var label = issuer
-                ? encodeURIComponent(issuer) + ':' + encodeURIComponent(acc.name)
+        const buildOtpauth = function (acc) {
+            const algo = acc.algorithm || DEFAULTS.algorithm;
+            const period = acc.period || DEFAULTS.period;
+            const digits = acc.digits || DEFAULTS.digits;
+            const issuer = acc.issuer || '';
+            const label = issuer
+                ? `${encodeURIComponent(issuer)}:${encodeURIComponent(acc.name)}`
                 : encodeURIComponent(acc.name);
-            var params = 'secret=' + encodeURIComponent(acc.secret);
-            if (issuer) params += '&issuer=' + encodeURIComponent(issuer);
-            params += '&algorithm=' + algo.replace('SHA-', 'SHA').replace('-', '');
-            params += '&digits=' + digits;
-            params += '&period=' + period;
-            return 'otpauth://totp/' + label + '?' + params;
+            let params = `secret=${encodeURIComponent(acc.secret)}`;
+            if (issuer) {
+                params += `&issuer=${encodeURIComponent(issuer)}`;
+            }
+            params += `&algorithm=${algo.replace('SHA-', 'SHA').replace('-', '')}`;
+            params += `&digits=${digits}`;
+            params += `&period=${period}`;
+            return `otpauth://totp/${label}?${params}`;
         };
 
-        var exportAccounts = async function () {
-            var accounts = (await store.getAccounts()) || [];
-            var full = accounts.map(function (acc) {
+        const exportAccounts = async function () {
+            const accounts = (await store.getAccounts()) || [];
+            const full = accounts.map(acc => {
                 return {
                     name: acc.name,
                     issuer: acc.issuer || '',
@@ -924,26 +966,30 @@
                     otpauth: buildOtpauth(acc)
                 };
             });
-            var data = JSON.stringify(full, null, 2);
-            var blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
-            var a = document.createElement('a');
+            const data = JSON.stringify(full, null, 2);
+            const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'authenticator-export.json';
             a.click();
         };
 
-        var importAccounts = function (e) {
-            var file = e.target.files[0];
-            if (!file) return;
-            var reader = new FileReader();
+        const importAccounts = function (e) {
+            const file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
             reader.onload = async function (ev) {
-                var text = ev.target.result;
-                var imported = 0;
+                const text = ev.target.result;
+                let imported = 0;
                 try {
-                    var arr = JSON.parse(text);
-                    if (!Array.isArray(arr)) arr = [arr];
-                    for (var i = 0; i < arr.length; i++) {
-                        var item = arr[i];
+                    let arr = JSON.parse(text);
+                    if (!Array.isArray(arr)) {
+                        arr = [arr];
+                    }
+                    for (let i = 0; i < arr.length; i++) {
+                        const item = arr[i];
                         if (item.secret) {
                             await addAccount(
                                 item.name || 'Imported',
@@ -956,7 +1002,7 @@
                             );
                             imported++;
                         } else if (item.otpauth) {
-                            var parsed = parseOtpauth(item.otpauth);
+                            const parsed = parseOtpauth(item.otpauth);
                             if (parsed) {
                                 await addAccount(
                                     parsed.name,
@@ -972,11 +1018,11 @@
                         }
                     }
                 } catch (ex) {
-                    var lines = text.split('\n');
-                    for (var j = 0; j < lines.length; j++) {
-                        var line = lines[j].trim();
+                    const lines = text.split('\n');
+                    for (let j = 0; j < lines.length; j++) {
+                        const line = lines[j].trim();
                         if (line.indexOf('otpauth://') === 0) {
-                            var parsed = parseOtpauth(line);
+                            const parsed = parseOtpauth(line);
                             if (parsed) {
                                 await addAccount(
                                     parsed.name,
@@ -993,9 +1039,7 @@
                     }
                 }
                 if (imported > 0) {
-                    showToast(
-                        'Imported ' + imported + ' account' + (imported > 1 ? 's' : '') + '.'
-                    );
+                    showToast(`Imported ${imported} account${imported > 1 ? 's' : ''}.`);
                 } else {
                     showToast('No valid accounts found in file.');
                 }
@@ -1004,15 +1048,17 @@
             reader.readAsText(file);
         };
 
-        var deleteAccount = async function (idx) {
-            var accounts = await store.getAccounts();
+        const deleteAccount = async function (idx) {
+            const accounts = (await store.getAccounts()) || [];
             accounts.splice(idx, 1);
             await store.saveAccounts(accounts);
             render();
         };
 
-        var resetAccounts = function () {
-            if (!confirm('Delete all accounts? This cannot be undone.')) return;
+        const resetAccounts = function () {
+            if (!confirm('Delete all accounts? This cannot be undone.')) {
+                return;
+            }
             store.resetAll();
             editing = false;
             $('#editBtn').classList.remove('active');
@@ -1023,9 +1069,11 @@
             render();
         };
 
-        var addAccount = async function (name, secret, algorithm, period, digits, url, issuer) {
-            if (!secret) return false;
-            var acc = {
+        const addAccount = async function (name, secret, algorithm, period, digits, url, issuer) {
+            if (!secret) {
+                return false;
+            }
+            const acc = {
                 name: name,
                 secret: secret,
                 algorithm: algorithm || DEFAULTS.algorithm,
@@ -1034,40 +1082,42 @@
                 url: url || '',
                 issuer: issuer || ''
             };
-            var accounts = (await store.getAccounts()) || [];
+            const accounts = (await store.getAccounts()) || [];
             accounts.push(acc);
             await store.saveAccounts(accounts);
             render();
             return true;
         };
 
-        var showQR = async function (idx) {
-            var accounts = (await store.getAccounts()) || [];
-            var acc = accounts[idx];
-            if (!acc) return;
-            var uri = buildOtpauth(acc);
+        const showQR = async function (idx) {
+            const accounts = (await store.getAccounts()) || [];
+            const acc = accounts[idx];
+            if (!acc) {
+                return;
+            }
+            const uri = buildOtpauth(acc);
             $('#qrTitle').textContent = acc.issuer
-                ? acc.issuer + (acc.name ? ' (' + acc.name + ')' : '')
+                ? `${acc.issuer}${acc.name ? ` (${acc.name})` : ''}`
                 : acc.name;
             $('#qrUri').textContent = uri;
 
-            var qr = qrcode(0, 'M');
+            const qr = qrcode(0, 'M');
             qr.addData(uri);
             qr.make();
 
-            var canvas = $('#qrCanvas');
-            var size = 240;
-            var modules = qr.getModuleCount();
-            var cellSize = Math.floor(size / modules);
-            var realSize = cellSize * modules;
+            const canvas = $('#qrCanvas');
+            const size = 240;
+            const modules = qr.getModuleCount();
+            const cellSize = Math.floor(size / modules);
+            const realSize = cellSize * modules;
             canvas.width = realSize;
             canvas.height = realSize;
-            var ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, realSize, realSize);
             ctx.fillStyle = '#000';
-            for (var r = 0; r < modules; r++) {
-                for (var c = 0; c < modules; c++) {
+            for (let r = 0; r < modules; r++) {
+                for (let c = 0; c < modules; c++) {
                     if (qr.isDark(r, c)) {
                         ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
                     }
@@ -1077,14 +1127,16 @@
             $('#qrModal').classList.add('open');
         };
 
-        var closeQR = function () {
+        const closeQR = function () {
             $('#qrModal').classList.remove('open');
         };
 
-        var openEdit = async function (idx) {
-            var accounts = (await store.getAccounts()) || [];
-            var acc = accounts[idx];
-            if (!acc) return;
+        const openEdit = async function (idx) {
+            const accounts = (await store.getAccounts()) || [];
+            const acc = accounts[idx];
+            if (!acc) {
+                return;
+            }
             editIndex = idx;
             $('#modalTitle').textContent = 'Edit Account';
             $('#addKeyButton').textContent = 'Save';
@@ -1098,14 +1150,14 @@
             $('#addModal').classList.add('open');
         };
 
-        var onSave = async function () {
-            var issuer = $('#keyIssuer').value.trim();
-            var name = $('#keyAccount').value.trim();
-            var secret = $('#keySecret').value.replace(/\s/g, '');
-            var url = $('#keyUrl').value.trim();
-            var algo = $('#keyAlgorithm').value;
-            var period = parseInt($('#keyPeriod').value, 10);
-            var digits = parseInt($('#keyDigits').value, 10);
+        const onSave = async function () {
+            const issuer = $('#keyIssuer').value.trim();
+            const name = $('#keyAccount').value.trim();
+            const secret = $('#keySecret').value.replace(/\s/g, '');
+            const url = $('#keyUrl').value.trim();
+            const algo = $('#keyAlgorithm').value;
+            const period = parseInt($('#keyPeriod').value, 10);
+            const digits = parseInt($('#keyDigits').value, 10);
             if (!name) {
                 $('#keyAccount').focus();
                 return;
@@ -1116,7 +1168,7 @@
             }
 
             if (editIndex >= 0) {
-                var accounts = (await store.getAccounts()) || [];
+                const accounts = (await store.getAccounts()) || [];
                 accounts[editIndex] = {
                     name: name,
                     secret: secret,
@@ -1134,7 +1186,7 @@
             closeModal();
         };
 
-        var closeModal = function () {
+        const closeModal = function () {
             $('#addModal').classList.remove('open');
             editIndex = -1;
             $('#modalTitle').textContent = 'Add Account';
@@ -1148,21 +1200,25 @@
             $('#keyDigits').value = DEFAULTS.digits;
         };
 
-        var tick = function () {
-            var now = Math.round(Date.now() / 1000);
-            if (now === lastRenderedAt) return;
+        const tick = function () {
+            const now = Math.round(Date.now() / 1000);
+            if (now === lastRenderedAt) {
+                return;
+            }
 
-            var countdowns = document.querySelectorAll('.meta-countdown');
-            var codes = document.querySelectorAll('.totp-code');
-            var needsFullRender = false;
+            const countdowns = document.querySelectorAll('.meta-countdown');
+            const codes = document.querySelectorAll('.totp-code');
+            let needsFullRender = false;
 
-            for (var i = 0; i < countdowns.length; i++) {
-                var card = countdowns[i].closest('.account-card');
-                if (!card) continue;
-                var period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
-                var step = Math.floor(now / period);
-                var cd = period - (now % period);
-                countdowns[i].textContent = cd + 's';
+            for (let i = 0; i < countdowns.length; i++) {
+                const card = countdowns[i].closest('.account-card');
+                if (!card) {
+                    continue;
+                }
+                const period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
+                const step = Math.floor(now / period);
+                const cd = period - (now % period);
+                countdowns[i].textContent = `${cd}s`;
 
                 if (lastCodeStepByIndex[i] !== step) {
                     needsFullRender = true;
@@ -1182,4 +1238,4 @@
     exports.DEFAULTS = DEFAULTS;
     exports.StorageService = StorageService;
     exports.KeyUtilities = KeyUtilities;
-})(typeof exports === 'undefined' ? (this['totpAuth'] = {}) : exports);
+})(typeof exports === 'undefined' ? (this.totpAuth = {}) : exports);

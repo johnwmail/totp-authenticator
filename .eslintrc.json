@@ -5,6 +5,10 @@
         "es2021": true,
         "node": true
     },
+    "globals": {
+        "totpAuth": "readonly",
+        "qrcode": "readonly"
+    },
     "extends": "eslint:recommended",
     "parserOptions": {
         "ecmaVersion": "latest"
@@ -12,8 +16,8 @@
     "rules": {
         "indent": ["warn", 4],
         "linebreak-style": ["warn", "unix"],
-        "quotes": ["warn", "double"],
-        "semi": ["warn", "never"],
+        "quotes": ["warn", "single"],
+        "semi": ["error", "always"],
         "no-var": "warn",
         "prefer-const": "warn",
         "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
