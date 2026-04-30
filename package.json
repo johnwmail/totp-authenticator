@@ -7,7 +7,9 @@
     "lint:fix": "eslint js/*.js --fix",
     "format": "prettier --write 'js/*.js' 'index.html'",
     "format:check": "prettier --check 'js/*.js' 'index.html'",
-    "test": "node test/totp.test.js"
+    "test": "node tests/unit/totp.test.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "keywords": [
     "totp",
@@ -19,6 +21,7 @@
   "author": "",
   "license": "GPL-3.0",
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5"
   }

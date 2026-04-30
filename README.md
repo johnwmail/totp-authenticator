@@ -112,6 +112,11 @@ The project deploys to **Cloudflare Pages** via GitHub Actions (`.github/workflo
 | Push tag `v*` | `main` | **Production** → [totp-1sr.pages.dev](https://totp-1sr.pages.dev) |
 | Pull request | PR branch | **Preview** (unique URL per PR) |
 
+**CI Pipeline:**
+1. **Unit Tests** — `npm test`
+2. **E2E Tests** — Playwright (Chromium, Mobile Chrome, Mobile Safari)
+3. **Deploy** — only runs after both test jobs pass
+
 The workflow uses [`cloudflare/wrangler-action@v3`](https://github.com/cloudflare/wrangler-action) and requires two repository secrets:
 
 - `CLOUDFLARE_API_TOKEN`
@@ -157,6 +162,48 @@ Use the **Export** button regularly to back up your accounts. `localStorage` can
 - **Web Crypto API** (`crypto.subtle`) for HMAC-SHA-1/256/512 (TOTP) and AES-GCM + PBKDF2 (encryption)
 - [qrcode.js](https://github.com/davidshimjs/qrcodejs) vendored in `lib/` — the only external dependency
 - CSS custom properties for light / dark theming
+- [Playwright](https://playwright.dev/) for E2E testing
+
+## Testing
+
+```
+tests/
+  unit/totp.test.js    # Unit tests (Node.js)
+  e2e/e2e.spec.js      # E2E tests (Playwright)
+```
+
+### Unit Tests
+
+```bash
+npm test
+```
+
+### E2E Tests (Playwright)
+
+```bash
+# Install browsers (one-time)
+npx playwright install --with-deps chromium webkit
+
+# Run all tests
+npm run test:e2e
+
+# Run with UI
+npm run test:e2e:ui
+
+# Run specific browser
+npx playwright test --project=chromium
+npx playwright test --project=mobile-chrome
+npx playwright test --project=mobile-safari
+```
+
+**Test coverage:**
+- Account CRUD (add, edit, delete)
+- Import / Export JSON
+- TOTP code display and clipboard
+- Dark mode toggle
+- Encryption (set password, lock/unlock)
+- QR code modal
+- Mobile responsive layout
 
 ## License
 

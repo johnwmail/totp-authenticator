@@ -17,7 +17,7 @@ if (!globalThis.crypto) {
 
 const totpAuth = {};
 const moduleCode = require('fs').readFileSync(
-    require('path').join(__dirname, '..', 'js', 'totp-auth.js'), 'utf8'
+    require('path').join(__dirname, '..', '..', 'js', 'totp-auth.js'), 'utf8'
 );
 const fn = new Function('exports', 'crypto', moduleCode);
 fn(totpAuth, globalThis.crypto);
