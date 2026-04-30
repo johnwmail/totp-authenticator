@@ -5,13 +5,13 @@ module.exports = defineConfig({
     timeout: 30000,
     retries: 0,
     use: {
-        baseURL: 'http://localhost:8080',
+        baseURL: 'http://localhost:18081',
         headless: true,
         screenshot: 'only-on-failure',
     },
     webServer: {
-        command: 'python3 -m http.server 8081',
-        port: 8081,
+        command: 'python3 -m http.server 18081',
+        port: 18081,
         reuseExistingServer: !process.env.CI,
     },
     projects: [
