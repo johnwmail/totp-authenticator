@@ -9,7 +9,11 @@ test.describe('TOTP Authenticator E2E', () => {
         await page.evaluate(() => localStorage.clear());
         await page.reload();
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
-        await expect(page.locator('.account-card').first()).toBeVisible();
+        // Wait for accounts.json to fully load
+        await expect(async () => {
+            const count = await page.locator('.account-card').count();
+            expect(count).toBeGreaterThan(0);
+        }).toPass({ timeout: 10000 });
     });
 
     test('loads accounts', async ({ page }) => {
@@ -356,12 +360,14 @@ test.describe('Mobile Layout', () => {
         await page.evaluate(() => localStorage.clear());
         await page.reload();
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
-        await expect(page.locator('.account-card').first()).toBeVisible();
+        await expect(async () => {
+            const count = await page.locator('.account-card').count();
+            expect(count).toBeGreaterThan(0);
+        }).toPass({ timeout: 10000 });
     });
 
     test('renders accounts on small screen', async ({ page }) => {
         const cards = page.locator('.account-card');
-        await expect(cards.first()).toBeVisible();
         const count = await cards.count();
         expect(count).toBeGreaterThanOrEqual(1);
     });
