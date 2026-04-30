@@ -43,9 +43,6 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
-      - name: Create accounts.json for tests
-        run: cp accounts.example.json accounts.json
-
       - name: Run E2E tests
         run: npx playwright test
 
