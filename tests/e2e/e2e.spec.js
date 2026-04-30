@@ -9,6 +9,7 @@ test.describe('TOTP Authenticator E2E', () => {
         await page.evaluate(() => localStorage.clear());
         await page.reload();
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
+        await expect(page.locator('.account-card').first()).toBeVisible();
     });
 
     test('loads accounts', async ({ page }) => {
@@ -112,8 +113,6 @@ test.describe('TOTP Authenticator E2E', () => {
             const initialCount = await page.locator('.account-card').count();
 
             await page.locator('#editBtn').click();
-
-            page.on('dialog', (dialog) => dialog.accept());
             await page.locator('.delete-btn').first().click();
 
             await expect(page.locator('.account-card')).toHaveCount(initialCount - 1);
@@ -357,10 +356,12 @@ test.describe('Mobile Layout', () => {
         await page.evaluate(() => localStorage.clear());
         await page.reload();
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
+        await expect(page.locator('.account-card').first()).toBeVisible();
     });
 
     test('renders accounts on small screen', async ({ page }) => {
         const cards = page.locator('.account-card');
+        await expect(cards.first()).toBeVisible();
         const count = await cards.count();
         expect(count).toBeGreaterThanOrEqual(1);
     });

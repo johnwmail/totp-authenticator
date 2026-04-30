@@ -10,7 +10,7 @@ module.exports = defineConfig({
         screenshot: 'only-on-failure',
     },
     webServer: {
-        command: 'python3 -m http.server 18081',
+        command: 'python3 -m http.server 18081 >/dev/null 2>&1',
         port: 18081,
         reuseExistingServer: !process.env.CI,
     },
