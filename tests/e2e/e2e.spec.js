@@ -14,7 +14,14 @@ test.describe('TOTP Authenticator E2E', () => {
     test('loads accounts', async ({ page }) => {
         const cards = page.locator('.account-card');
         const count = await cards.count();
+        // App loads either accounts.json or a fallback demo account
         expect(count).toBeGreaterThanOrEqual(1);
+
+        // First account should be visible with a valid name
+        const firstAccount = page.locator('.account-name').first();
+        await expect(firstAccount).toBeVisible();
+        const text = await firstAccount.textContent();
+        expect(text.length).toBeGreaterThan(0);
     });
 
     test('displays TOTP codes as 6-digit numbers', async ({ page }) => {
