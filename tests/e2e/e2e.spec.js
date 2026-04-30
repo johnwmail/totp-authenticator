@@ -267,7 +267,7 @@ test.describe('TOTP Authenticator E2E', () => {
         test('click code copies to clipboard', async ({ page, context, browserName }) => {
             const firstCode = page.locator('.totp-code').first();
 
-            if (browserName === 'webkit') {
+            if (browserName === 'webkit' || browserName === 'firefox') {
                 const codeText = (await firstCode.textContent()).replace('Copied!', '').trim();
                 expect(codeText).toMatch(/^\d{6}$/);
                 await firstCode.click();

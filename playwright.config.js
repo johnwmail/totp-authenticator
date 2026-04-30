@@ -10,14 +10,18 @@ module.exports = defineConfig({
         screenshot: 'only-on-failure',
     },
     webServer: {
-        command: 'python3 -m http.server 8080',
-        port: 8080,
+        command: 'python3 -m http.server 8081',
+        port: 8081,
         reuseExistingServer: !process.env.CI,
     },
     projects: [
         {
             name: 'chromium',
             use: { browserName: 'chromium' },
+        },
+        {
+            name: 'firefox',
+            use: { browserName: 'firefox' },
         },
         {
             name: 'mobile-chrome',
