@@ -637,10 +637,11 @@ test.describe('Mobile Layout', () => {
         await expect(page.locator('#pwError')).toContainText(/incorrect|password/i);
     });
 
-    test('clicking URL in share modal copies to clipboard', async ({ page, context }) => {
-        if (context.browserName() !== 'chromium') {
-            return;
+    test('clicking URL in share modal copies to clipboard', async ({ page, browserName }) => {
+        if (browserName !== 'chromium') {
+            test.skip();
         }
+        const context = page.context();
         await context.grantPermissions(['clipboard-write', 'clipboard-read']);
         await page.locator('#editBtn').click();
         await page.locator('#shareBtn').click();
