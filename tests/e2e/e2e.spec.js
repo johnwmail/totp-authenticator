@@ -638,17 +638,19 @@ test.describe('Mobile Layout', () => {
     });
 
     test('clicking URL in share modal copies to clipboard', async ({ page, browserName }) => {
-        if (browserName !== 'chromium') {
-            test.skip();
-        }
-        const context = page.context();
-        await context.grantPermissions(['clipboard-write', 'clipboard-read']);
         await page.locator('#editBtn').click();
         await page.locator('#shareBtn').click();
         await page.locator('#sharePwInput').fill('testpassword');
         await page.locator('#shareGenerate').click();
         await page.locator('#shareUrlOutput').click();
-        const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
-        expect(clipboardText).toContain('#data=');
+        const url = await page.locator('#shareUrlOutput').inputValue();
+        expect(url).toContain('#data=');
+        if (browserName === 'chromium') {
+            const context = page.context();
+            await context.grantPermissions(['clipboard-write', 'clipboard-read']);
+            await page.evaluate(() => navigator.clipboard.writeText(document.querySelector('#shareUrlOutput').value));
+            const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+            expect(clipboardText).toContain('#data=');
+        }
     });
 });
