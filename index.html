@@ -533,6 +533,10 @@
                 margin-top: 8px;
             }
 
+            .hidden {
+                display: none !important;
+            }
+
             /* ---- Lock screen ---- */
             .lock-screen {
                 display: none;
@@ -718,6 +722,14 @@
                 >
                     &#x2913;
                 </button>
+                <button
+                    id="shareBtn"
+                    class="hidden"
+                    title="Share accounts"
+                    aria-label="Share accounts"
+                >
+                    &#x1F517;
+                </button>
                 <button id="editBtn" title="Edit accounts" aria-label="Edit accounts">
                     &#x2699;
                 </button>
@@ -874,6 +886,51 @@
             </div>
         </div>
 
+        <!-- Share accounts modal -->
+        <div
+            class="modal-overlay"
+            id="shareModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shareTitle"
+        >
+            <div class="modal">
+                <h2 id="shareTitle">Share Accounts</h2>
+                <label for="sharePwInput">Password</label>
+                <input
+                    type="password"
+                    id="sharePwInput"
+                    placeholder="Enter password to encrypt"
+                    aria-required="true"
+                />
+                <div class="modal-actions">
+                    <button
+                        class="btn-cancel"
+                        id="shareCancel"
+                        aria-label="Cancel sharing"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        class="btn-primary"
+                        id="shareGenerate"
+                        aria-label="Generate share URL"
+                    >
+                        Generate URL
+                    </button>
+                </div>
+                <div id="shareUrlContainer" class="hidden" style="margin-top: 16px;">
+                    <label for="shareUrlOutput">Share this URL to share your accounts securely:</label>
+                    <input
+                        type="text"
+                        id="shareUrlOutput"
+                        readonly
+                        aria-label="Share URL"
+                    />
+                </div>
+            </div>
+        </div>
+
         <!-- Set/Change password modal -->
         <div
             class="modal-overlay"
@@ -921,6 +978,7 @@
             </div>
         </div>
 
+        <script src="lib/lz-string.min.js?v=vDev"></script>
         <script src="lib/qrcode.js?v=vDev"></script>
         <script src="js/totp-auth.js?v=vDev"></script>
         <script src="js/app-init.js?v=vDev"></script>

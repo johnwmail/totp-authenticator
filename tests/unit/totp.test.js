@@ -15,12 +15,29 @@ if (!globalThis.crypto) {
     globalThis.crypto = webcrypto;
 }
 
+const LZString = require('lz-string');
+
 const totpAuth = {};
 const moduleCode = require('fs').readFileSync(
     require('path').join(__dirname, '..', '..', 'js', 'totp-auth.js'), 'utf8'
 );
-const fn = new Function('exports', 'crypto', moduleCode);
-fn(totpAuth, globalThis.crypto);
+const fn = new Function('exports', 'crypto', 'LZString', moduleCode);
+fn(totpAuth, globalThis.crypto, LZString);
+
+if (!globalThis.window) {
+    globalThis.window = { location: { hash: '', origin: 'http://localhost', pathname: '/' } };
+}
+if (!globalThis.history) {
+    globalThis.history = { replaceState() {} };
+}
+
+// Make window available globally for browser code
+if (typeof window === 'undefined') {
+    Object.defineProperty(globalThis, 'window', {
+        get: () => globalThis.window,
+        configurable: true
+    });
+}
 
 let passed = 0;
 let failed = 0;
@@ -246,6 +263,10 @@ async function runTests() {
 
     // ---- Regression tests ----
     await runRenderingRaceRegressionTest();
+
+    // ---- Share URL compression/encryption tests ----
+    await runShareUrlTests();
+
     await runTickDedupRegressionTest();
 
     // ---- Summary ----
@@ -1010,6 +1031,66 @@ async function runTickDedupRegressionTest() {
         globalThis.setInterval = originalSetInterval;
         globalThis.clearInterval = originalClearInterval;
         Date.now = originalDateNow;
+    }
+}
+
+// ---- Share URL compression/encryption tests ----
+async function runShareUrlTests() {
+    const originalStorage = globalThis.Storage;
+    const originalLocalStorage = globalThis.localStorage;
+
+    const mockLs = makeMockStorage();
+    globalThis.Storage = function() {};
+    globalThis.localStorage = mockLs;
+
+    try {
+        const store = new totpAuth.StorageService();
+
+        const accounts = [
+            { name: 'test@example.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'Test', algorithm: 'SHA-1', period: 30, digits: 6, url: '' },
+            { name: 'github@user.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'GitHub', algorithm: 'SHA-1', period: 30, digits: 6, url: 'https://github.com' }
+        ];
+
+        assert(typeof store.compressAndEncrypt === 'function', 'compressAndEncrypt is a function');
+        assert(typeof store.decompressAndDecrypt === 'function', 'decompressAndDecrypt is a function');
+
+        const data = await store.compressAndEncrypt(accounts, 'testpassword');
+        assert(typeof data === 'string', 'compressAndEncrypt returns a string');
+        assert(data.includes('.'), 'compressAndEncrypt returns dot-separated data');
+
+        const decrypted = await store.decompressAndDecrypt(data, 'testpassword');
+        assert(Array.isArray(decrypted), 'decompressAndDecrypt returns an array');
+        assert(decrypted.length === accounts.length, 'decompressAndDecrypt returns correct number of accounts');
+
+        const sortedDecrypted = decrypted.slice().sort((a, b) => a.secret.localeCompare(b.secret));
+        const sortedAccounts = accounts.slice().sort((a, b) => a.secret.localeCompare(b.secret));
+        for (let i = 0; i < sortedDecrypted.length; i++) {
+            assert(sortedDecrypted[i].name === sortedAccounts[i].name, 'account name preserved after roundtrip');
+            assert(sortedDecrypted[i].secret === sortedAccounts[i].secret, 'account secret preserved after roundtrip');
+            assert(sortedDecrypted[i].issuer === sortedAccounts[i].issuer, 'account issuer preserved after roundtrip');
+        }
+
+        let wrongPasswordFailed = false;
+        try {
+            await store.decompressAndDecrypt(data, 'wrongpassword');
+        } catch (e) {
+            wrongPasswordFailed = true;
+        }
+        assert(wrongPasswordFailed, 'decompressAndDecrypt with wrong password throws error');
+
+        const emptyData = await store.compressAndEncrypt([], 'testpassword');
+        assert(typeof emptyData === 'string', 'compressAndEncrypt works with empty array');
+        const emptyDecrypted = await store.decompressAndDecrypt(emptyData, 'testpassword');
+        assert(Array.isArray(emptyDecrypted), 'decompressAndDecrypt returns array for empty input');
+        assert(emptyDecrypted.length === 0, 'empty array roundtrips correctly');
+
+        const data1 = await store.compressAndEncrypt(accounts, 'password1');
+        const data2 = await store.compressAndEncrypt(accounts, 'password2');
+        assert(data1 !== data2, 'different passwords produce different outputs');
+
+    } finally {
+        globalThis.Storage = originalStorage;
+        globalThis.localStorage = originalLocalStorage;
     }
 }
 
