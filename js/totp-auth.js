@@ -2,6 +2,7 @@
 // Uses native Web Crypto API (no external dependencies for crypto)
 // Based on original work by Gerard Braad (GPL-3.0)
 /* eslint-disable no-use-before-define */
+/* global LZString */
 
 (function (exports) {
     'use strict';
@@ -103,6 +104,42 @@
             return JSON.parse(new TextDecoder().decode(plain));
         }
 
+        async function compressAndEncrypt(data, password) {
+            const jsonStr = JSON.stringify(data);
+            const compressed = LZString.compressToUTF16(jsonStr);
+            const salt = randomBytes(16);
+            const iterations = 310000;
+            const key = await deriveKey(password, salt, iterations);
+            const iv = randomBytes(12);
+            const enc = new TextEncoder();
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(compressed)
+            );
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.' + iterations;
+        }
+
+        async function decompressAndDecrypt(data, password) {
+            const parts = data.split('.');
+            if (parts.length !== 4) {
+                throw new Error('Invalid share data format');
+            }
+            const ct = base64ToBuf(parts[0]);
+            const iv = base64ToBuf(parts[1]);
+            const salt = base64ToBuf(parts[2]);
+            const iterations = parseInt(parts[3], 10);
+            const key = await deriveKey(password, salt, iterations);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+            const dec = new TextDecoder();
+            const compressed = dec.decode(decrypted);
+            const jsonStr = LZString.decompressFromUTF16(compressed);
+            if (!jsonStr) {
+                throw new Error('Failed to decompress data');
+            }
+            return JSON.parse(jsonStr);
+        }
+
         async function setPassword(password) {
             const accounts = await getAccounts();
             if (!password) {
@@ -199,6 +236,8 @@
             saveAccounts: saveAccounts,
             resetAll: resetAll,
             hasAnyData: hasAnyData,
+            compressAndEncrypt: compressAndEncrypt,
+            decompressAndDecrypt: decompressAndDecrypt,
             // Legacy compat
             getObject: getPlain,
             setObject: setPlain
@@ -549,6 +588,7 @@
             // Bind UI
             $('#editBtn').addEventListener('click', toggleEdit);
             $('#exportBtn').addEventListener('click', exportAccounts);
+            $('#shareBtn').addEventListener('click', openShareModal);
             $('#importBtn').addEventListener('click', () => {
                 $('#importFile').click();
             });
@@ -602,6 +642,20 @@
             $('#setPwCancel').addEventListener('click', closeSetPwModal);
             $('#setPwSubmit').addEventListener('click', onSetPasswordSubmit);
 
+            // Share modal
+            $('#shareBtn').addEventListener('click', openShareModal);
+            $('#shareCancel').addEventListener('click', closeShareModal);
+            $('#shareGenerate').addEventListener('click', onShareGenerate);
+            $('#shareModal').addEventListener('click', e => {
+                if (e.target === $('#shareModal')) {
+                    closeShareModal();
+                }
+            });
+            $('#shareUrlOutput').addEventListener('click', copyShareUrl);
+            $('#sharePwInput').addEventListener('input', () => {
+                $('#shareGenerate').disabled = !$('#sharePwInput').value;
+            });
+
             // Dark mode toggle
             $('#themeBtn').addEventListener('click', toggleTheme);
             applyTheme();
@@ -617,6 +671,136 @@
                 await render();
                 startTicker();
             }
+
+            // Check for share URL on load
+            checkShareUrl();
+        };
+
+        const checkShareUrl = function () {
+            const hash = typeof window !== 'undefined' ? window.location.hash : '';
+            if (!hash || !hash.startsWith('#data=')) {
+                return;
+            }
+            const data = hash.substring(6);
+            openImportPasswordModal(data);
+        };
+
+        let importDataContext = null;
+        let importAttemptCount = 0;
+
+        const openImportPasswordModal = function (data) {
+            importDataContext = data;
+            importAttemptCount = 0;
+            openPasswordModal('import');
+        };
+
+        const onPasswordSubmit = async function () {
+            const pw = $('#pwInput').value;
+            if (!pw) {
+                return;
+            }
+            const mode = passwordModalMode;
+
+            if (mode === 'unlock') {
+                const ok = await store.unlock(pw);
+                if (ok) {
+                    closePasswordModal();
+                    $('#lockScreen').classList.remove('visible');
+                    startTicker();
+                    await render();
+                } else {
+                    $('#pwError').textContent = 'Incorrect password';
+                }
+            } else if (mode === 'import') {
+                try {
+                    const accounts = await store.decompressAndDecrypt(importDataContext, pw);
+                    const currentAccounts = (await store.getAccounts()) || [];
+                    const merged = mergeAccounts(currentAccounts, accounts);
+                    await store.saveAccounts(merged);
+                    clearShareUrl();
+                    closePasswordModal();
+                    importDataContext = null;
+                    showToast('Accounts imported successfully');
+                    await render();
+                } catch (e) {
+                    importAttemptCount++;
+                    if (importAttemptCount >= 3) {
+                        clearShareUrl();
+                        closePasswordModal();
+                        importDataContext = null;
+                        showToast('Too many failed attempts. Please request a new share URL.');
+                    } else {
+                        $('#pwError').textContent = 'Incorrect password (' + (3 - importAttemptCount) + ' attempts remaining)';
+                    }
+                }
+            } else if (mode === 'setPassword') {
+                if (store.isEncrypted() && !store.isUnlocked()) {
+                    const ok = await store.unlock(pw);
+                    if (!ok) {
+                        $('#pwError').textContent = 'Incorrect password';
+                        return;
+                    }
+                }
+                closePasswordModal();
+                openSetPassword();
+            }
+        };
+
+        const clearShareUrl = function () {
+            if (typeof window !== 'undefined' && typeof history !== 'undefined' && history.replaceState) {
+                history.replaceState(null, '', window.location.pathname);
+            }
+        };
+
+        const mergeAccounts = function (existing, incoming) {
+            const secretMap = new Map();
+            for (const acc of existing) {
+                secretMap.set(acc.secret, acc);
+            }
+            for (const acc of incoming) {
+                secretMap.set(acc.secret, acc);
+            }
+            return Array.from(secretMap.values());
+        };
+
+        const openShareModal = function () {
+            $('#sharePwInput').value = '';
+            $('#shareUrlContainer').classList.add('hidden');
+            $('#shareGenerate').disabled = true;
+            $('#shareModal').classList.add('open');
+            $('#sharePwInput').focus();
+        };
+
+        const closeShareModal = function () {
+            $('#shareModal').classList.remove('open');
+        };
+
+        const onShareGenerate = async function () {
+            const pw = $('#sharePwInput').value;
+            if (!pw) {
+                return;
+            }
+            const accounts = (await store.getAccounts()) || [];
+            try {
+                const data = await store.compressAndEncrypt(accounts, pw);
+                const baseUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+                const url = baseUrl + '#data=' + data;
+                $('#shareUrlOutput').value = url;
+                $('#shareUrlContainer').classList.remove('hidden');
+            } catch (e) {
+                showToast('Failed to generate URL');
+            }
+        };
+
+        const copyShareUrl = function () {
+            const url = $('#shareUrlOutput').value;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('URL copied to clipboard');
+            }).catch(() => {
+                $('#shareUrlOutput').select();
+                document.execCommand('copy');
+                showToast('URL copied to clipboard');
+            });
         };
 
         // ---- Theme (auto-detect by local time: 08:00–22:00 = light) ----
@@ -686,15 +870,18 @@
         };
 
         // Unlock modal
-        let passwordAction = ''; // 'unlock'
+        let passwordModalMode = ''; // 'unlock', 'import'
 
         const openPasswordModal = function (action) {
-            passwordAction = action;
+            passwordModalMode = action;
             $('#pwInput').value = '';
             $('#pwError').textContent = '';
             if (action === 'unlock') {
                 $('#pwTitle').textContent = 'Unlock Accounts';
                 $('#pwSubmit').textContent = 'Unlock';
+            } else if (action === 'import') {
+                $('#pwTitle').textContent = 'Import Accounts';
+                $('#pwSubmit').textContent = 'Import';
             }
             $('#passwordModal').classList.add('open');
             setTimeout(() => {
@@ -706,27 +893,6 @@
             $('#passwordModal').classList.remove('open');
             $('#pwInput').value = '';
             $('#pwError').textContent = '';
-        };
-
-        const onPasswordSubmit = async function () {
-            const pw = $('#pwInput').value;
-            if (!pw) {
-                $('#pwInput').focus();
-                return;
-            }
-            if (passwordAction === 'unlock') {
-                const ok = await store.unlock(pw);
-                if (ok) {
-                    closePasswordModal();
-                    hideLockScreen();
-                    updateLockIcon();
-                    await render();
-                    startTicker();
-                } else {
-                    $('#pwError').textContent = 'Wrong password';
-                    $('#pwInput').select();
-                }
-            }
         };
 
         // Set password modal
@@ -929,6 +1095,7 @@
             $('#resetBtn').classList.toggle('hidden', !editing);
             $('#importBtn').classList.toggle('hidden', !editing);
             $('#exportBtn').classList.toggle('hidden', !editing);
+            $('#shareBtn').classList.toggle('hidden', !editing);
             $('#addRow').style.display = editing ? '' : 'none';
             updateLockIcon();
             render();

@@ -480,3 +480,177 @@ test.describe('Mobile Layout', () => {
         expect(found).toBe(true);
     });
 });
+
+    test.describe('Share URL', () => {
+        test.beforeEach(async ({ page }) => {
+            await page.goto('/');
+            await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
+            await expect(async () => {
+                const count = await page.locator('.account-card').count();
+                expect(count).toBeGreaterThan(0);
+            }).toPass({ timeout: 10000 });
+        });
+
+        test('share button is visible in edit mode', async ({ page }) => {
+            await page.locator('#editBtn').click();
+            await expect(page.locator('#shareBtn')).toBeVisible();
+        });
+
+    test('share button opens share modal', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        await expect(page.locator('#shareModal')).toHaveClass(/open/);
+    });
+
+    test('share modal has password input', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        await expect(page.locator('#sharePwInput')).toBeVisible();
+    });
+
+    test('generate URL button is disabled without password', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        const generateBtn = page.locator('#shareGenerate');
+        await expect(generateBtn).toBeDisabled();
+    });
+
+    test('generate URL button is enabled with password', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        await page.locator('#sharePwInput').fill('testpassword');
+        const generateBtn = page.locator('#shareGenerate');
+        await expect(generateBtn).toBeEnabled();
+    });
+
+    test('generates URL with #data fragment', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        await page.locator('#sharePwInput').fill('testpassword');
+        await page.locator('#shareGenerate').click();
+        await expect(page.locator('#shareUrlContainer')).not.toHaveClass(/hidden/);
+        const urlOutput = page.locator('#shareUrlOutput');
+        await expect(urlOutput).toBeVisible();
+        const url = await urlOutput.inputValue();
+        expect(url).toContain('#data=');
+    });
+
+    test('closing share modal clears password', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        await page.locator('#sharePwInput').fill('testpassword');
+        await page.locator('#shareCancel').click();
+        await expect(page.locator('#shareModal')).not.toHaveClass(/open/);
+        await page.locator('#shareBtn').click();
+        const pwInput = page.locator('#sharePwInput');
+        expect(await pwInput.inputValue()).toBe('');
+    });
+
+    test('import URL with correct password merges accounts', async ({ page }) => {
+        const accounts = [
+            { name: 'test@example.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'Test', algorithm: 'SHA-1', period: 30, digits: 6, url: '' }
+        ];
+
+        const data = await page.evaluate(async ({ accounts }) => {
+            const LZString = window.LZString;
+            const jsonStr = JSON.stringify(accounts);
+            const compressed = LZString.compressToUTF16(jsonStr);
+
+            const enc = new TextEncoder();
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                enc.encode('sharepass'),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(compressed)
+            );
+
+            const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+        }, { accounts });
+
+        const initialCount = await page.locator('.account-card').count();
+        await page.goto(`/?#data=${data}`);
+        await expect(page.locator('#passwordModal')).toHaveClass(/open/);
+        await page.locator('#pwInput').fill('sharepass');
+        await page.locator('#pwSubmit').click();
+        await page.waitForTimeout(500);
+        const newCount = await page.locator('.account-card').count();
+        expect(newCount).toBeGreaterThan(initialCount);
+    });
+
+    test('import URL with wrong password shows error', async ({ page }) => {
+        const accounts = [
+            { name: 'test@example.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'Test', algorithm: 'SHA-1', period: 30, digits: 6, url: '' }
+        ];
+
+        const data = await page.evaluate(async ({ accounts }) => {
+            const LZString = window.LZString;
+            const jsonStr = JSON.stringify(accounts);
+            const compressed = LZString.compressToUTF16(jsonStr);
+
+            const enc = new TextEncoder();
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                enc.encode('sharepass'),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(compressed)
+            );
+
+            const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+        }, { accounts });
+
+        await page.goto(`/?#data=${data}`);
+        await expect(page.locator('#passwordModal')).toHaveClass(/open/);
+        await page.locator('#pwInput').fill('wrongpassword');
+        await page.locator('#pwSubmit').click();
+        await expect(page.locator('#pwError')).toContainText(/incorrect|password/i);
+    });
+
+    test('clicking URL in share modal copies to clipboard', async ({ page, browserName }) => {
+        await page.locator('#editBtn').click();
+        await page.locator('#shareBtn').click();
+        await page.locator('#sharePwInput').fill('testpassword');
+        await page.locator('#shareGenerate').click();
+        await page.locator('#shareUrlOutput').click();
+        const url = await page.locator('#shareUrlOutput').inputValue();
+        expect(url).toContain('#data=');
+        if (browserName === 'chromium') {
+            const context = page.context();
+            await context.grantPermissions(['clipboard-write', 'clipboard-read']);
+            await page.evaluate(() => navigator.clipboard.writeText(document.querySelector('#shareUrlOutput').value));
+            const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+            expect(clipboardText).toContain('#data=');
+        }
+    });
+});
