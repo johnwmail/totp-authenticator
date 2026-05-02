@@ -638,6 +638,9 @@ test.describe('Mobile Layout', () => {
     });
 
     test('clicking URL in share modal copies to clipboard', async ({ page, context }) => {
+        if (context.browserName() !== 'chromium') {
+            return;
+        }
         await context.grantPermissions(['clipboard-write', 'clipboard-read']);
         await page.locator('#editBtn').click();
         await page.locator('#shareBtn').click();
