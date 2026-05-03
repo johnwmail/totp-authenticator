@@ -135,7 +135,7 @@ The project deploys to **Cloudflare Pages** via GitHub Actions (`.github/workflo
 
 **CI Pipeline:**
 1. **Unit Tests** — `npm test`
-2. **E2E Tests** — Playwright (Chromium, Mobile Chrome, Mobile Safari)
+2. **E2E Tests** — Playwright (Chromium, Firefox, Mobile Chrome, Mobile Safari)
 3. **Deploy** — only runs after both test jobs pass
 
 The workflow uses [`cloudflare/wrangler-action@v3`](https://github.com/cloudflare/wrangler-action) and requires two repository secrets:
