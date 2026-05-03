@@ -103,6 +103,27 @@ Click the **☀️ / 🌙** button in the header to toggle between light and dar
 | **otpauth:// URIs** | Import/export supports standard `otpauth://totp/…` URIs for interop with other authenticator apps. |
 | **QR Codes** | In edit mode, click the QR icon on any account to display a scannable `otpauth://` QR code. Scan it with Google Authenticator, Authy, or any TOTP-compatible app. |
 
+## Share URL
+
+Share accounts via URL — no server required.
+
+1. Click **Share** in edit mode
+2. Enter a password and click **Generate URL**
+3. Click the URL to copy it
+4. Share the URL with anyone
+
+Recipients open the URL → enter password → accounts merge into their local storage.
+
+**How it works:**
+```
+accounts → lz-string.compress → AES-GCM.encrypt(password) → base64 → #data=...
+```
+
+- Uses the same AES-GCM + PBKDF2 (310 000 iterations) as encryption at rest
+- URL data is stored entirely in the URL fragment (`#data=`) — never sent to a server
+- After 3 failed password attempts, the URL is cleared to prevent brute force
+- Imported accounts are merged with existing accounts (no duplicates by secret)
+
 ## CI/CD Deployment
 
 The project deploys to **Cloudflare Pages** via GitHub Actions (`.github/workflows/ci.yml`).
@@ -160,7 +181,8 @@ Use the **Export** button regularly to back up your accounts. `localStorage` can
 
 - Pure **HTML / CSS / JavaScript** — no framework, no build step
 - **Web Crypto API** (`crypto.subtle`) for HMAC-SHA-1/256/512 (TOTP) and AES-GCM + PBKDF2 (encryption)
-- [qrcode.js](https://github.com/davidshimjs/qrcodejs) vendored in `lib/` — the only external dependency
+- [qrcode.js](https://github.com/davidshimjs/qrcodejs) vendored in `lib/` — QR code generation
+- [lz-string](https://github.com/pieroxy/lz-string) vendored in `lib/` — compression for Share URL feature
 - CSS custom properties for light / dark theming
 - [Playwright](https://playwright.dev/) for E2E testing
 
