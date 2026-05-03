@@ -712,7 +712,7 @@
                 const ok = await store.unlock(pw);
                 if (ok) {
                     closePasswordModal();
-                    $('#lockScreen').classList.remove('visible');
+                    hideLockScreen();
                     startTicker();
                     await render();
                     const pending = sessionStorage.getItem('pendingShare');
