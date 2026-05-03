@@ -653,4 +653,72 @@ test.describe('Mobile Layout', () => {
             expect(clipboardText).toContain('#data=');
         }
     });
+
+    test('import URL is rejected when vault is locked', async ({ page }) => {
+        const accounts = [
+            { name: 'test@example.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'Test', algorithm: 'SHA-1', period: 30, digits: 6, url: '' }
+        ];
+
+        const data = await page.evaluate(async ({ accounts }) => {
+            const LZString = window.LZString;
+            const jsonStr = JSON.stringify(accounts);
+            const compressed = LZString.compressToUTF16(jsonStr);
+
+            const enc = new TextEncoder();
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                enc.encode('sharepass'),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(compressed)
+            );
+
+            const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+        }, { accounts });
+
+        await page.locator('#editBtn').click();
+        await page.locator('#lockBtn').click();
+
+        await page.locator('#setPwInput').fill('vaultpassword');
+        await page.locator('#setPwConfirm').fill('vaultpassword');
+        await page.locator('#setPwSubmit').click();
+
+        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
+
+        await page.locator('#lockBtn').click();
+
+        await expect(page.locator('#lockScreen')).toBeVisible();
+
+        await page.goto(`/?#data=${data}`);
+
+        await expect(page.locator('.toast')).toContainText(/unlock.*first|locked/i);
+
+        const url = page.url();
+        expect(url).not.toContain('#data=');
+
+        await page.locator('#lockScreenUnlock').click();
+        await page.locator('#pwInput').fill('vaultpassword');
+        await page.locator('#pwSubmit').click();
+
+        await expect(page.locator('#passwordModal')).toHaveClass(/open/);
+        await page.locator('#pwInput').fill('sharepass');
+        await page.locator('#pwSubmit').click();
+
+        await expect(page.locator('.toast')).toContainText(/import/i);
+    });
 });

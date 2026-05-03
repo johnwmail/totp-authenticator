@@ -684,6 +684,7 @@
             }
             const data = hash.substring(6);
             if (store.isEncrypted()) {
+                sessionStorage.setItem('pendingShare', data);
                 showToast('Please unlock your vault first before importing accounts');
                 clearShareUrl();
                 return;
@@ -714,6 +715,11 @@
                     $('#lockScreen').classList.remove('visible');
                     startTicker();
                     await render();
+                    const pending = sessionStorage.getItem('pendingShare');
+                    if (pending) {
+                        sessionStorage.removeItem('pendingShare');
+                        openImportPasswordModal(pending);
+                    }
                 } else {
                     $('#pwError').textContent = 'Incorrect password';
                 }
@@ -731,6 +737,7 @@
                 } catch (e) {
                     importAttemptCount++;
                     if (importAttemptCount >= 3) {
+                        sessionStorage.removeItem('pendingShare');
                         clearShareUrl();
                         closePasswordModal();
                         importDataContext = null;
