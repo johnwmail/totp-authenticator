@@ -683,6 +683,11 @@
                 return;
             }
             const data = hash.substring(6);
+            if (store.isEncrypted()) {
+                showToast('Please unlock your vault first before importing accounts');
+                clearShareUrl();
+                return;
+            }
             openImportPasswordModal(data);
         };
 
