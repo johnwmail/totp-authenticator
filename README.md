@@ -204,7 +204,7 @@ npm test
 
 ```bash
 # Install browsers (one-time)
-npx playwright install --with-deps chromium webkit
+npx playwright install --with-deps chromium firefox webkit
 
 # Run all tests
 npm run test:e2e
@@ -214,6 +214,7 @@ npm run test:e2e:ui
 
 # Run specific browser
 npx playwright test --project=chromium
+npx playwright test --project=firefox
 npx playwright test --project=mobile-chrome
 npx playwright test --project=mobile-safari
 ```
@@ -225,6 +226,7 @@ npx playwright test --project=mobile-safari
 - Dark mode toggle
 - Encryption (set password, lock/unlock)
 - QR code modal
+- Share URL (generate URL with password, import from URL)
 - Mobile responsive layout
 
 ## License
