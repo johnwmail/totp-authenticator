@@ -323,6 +323,34 @@ test.describe('TOTP Authenticator E2E', () => {
                 await expect(page.locator('#lockScreen')).not.toBeVisible();
             }
         });
+
+        test('unlock vault shows accounts', async ({ page }) => {
+            await page.locator('#editBtn').click();
+
+            const lockBtn = page.locator('#lockBtn');
+            if (await lockBtn.isVisible()) {
+                await lockBtn.click();
+
+                await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+
+                await page.locator('#setPwInput').fill('testpassword123');
+                await page.locator('#setPwConfirm').fill('testpassword123');
+                await page.locator('#setPwSubmit').click();
+
+                await expect(page.locator('#lockScreen')).not.toBeVisible();
+            }
+
+            await lockBtn.click();
+
+            await expect(page.locator('#lockScreen')).toBeVisible();
+
+            await page.locator('#lockScreenUnlock').click();
+            await page.locator('#pwInput').fill('testpassword123');
+            await page.locator('#pwSubmit').click();
+
+            await expect(page.locator('#lockScreen')).not.toBeVisible();
+            await expect(page.locator('.account-card').first()).toBeVisible();
+        });
     });
 
     test.describe('QR Code', () => {
