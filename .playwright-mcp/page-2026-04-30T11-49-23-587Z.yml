@@ -1,0 +1,651 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - heading "Yahoo" [level=1] [ref=e7]:
+          - link "Yahoo" [ref=e8] [cursor=pointer]:
+            - /url: https://hk.yahoo.com
+            - img "Yahoo" [ref=e9]
+        - generic [ref=e10]:
+          - generic [ref=e11]:
+            - generic [ref=e15]:
+              - combobox "搜尋" [active] [ref=e16]
+              - button "語音搜尋" [ref=e19] [cursor=pointer]:
+                - img [ref=e20]
+              - button "搜尋" [ref=e22] [cursor=pointer]:
+                - img [ref=e23]
+            - link "中西區 晴 25°C" [ref=e26] [cursor=pointer]:
+              - /url: https://hk.news.yahoo.com/weather/香港/中西區/中西區-24703128
+              - generic [ref=e27]: 中西區
+              - img "晴" [ref=e29]
+              - generic [ref=e30]: 25°C
+            - generic [ref=e31]:
+              - link "登入" [ref=e32] [cursor=pointer]:
+                - /url: https://login.yahoo.com/?.lang=zh-Hant-HK&.done=https%3A%2F%2Fhk.yahoo.com%2F&.src=frontpage&.intl=hk
+              - link "信箱" [ref=e33] [cursor=pointer]:
+                - /url: https://mail.yahoo.com/?.src=fp&.intl=hk&.lang=zh-Hant-HK
+                - img [ref=e34]
+          - generic [ref=e36]:
+            - generic [ref=e37]: 熱搜
+            - list [ref=e38]:
+              - listitem [ref=e39]:
+                - link "林淑茵" [ref=e40] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E6%9E%97%E6%B7%91%E8%8C%B5&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e41]:
+                - link "寒戰1994" [ref=e42] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E5%AF%92%E6%88%B01994&fr=yfp-search-tn&fr2=fp-hotsearch
+                  - text: 寒戰1994
+                  - img [ref=e43]
+              - listitem [ref=e45]:
+                - link "曼谷機票" [ref=e46] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E6%9B%BC%E8%B0%B7%E6%A9%9F%E7%A5%A8&fr=yfp-search-tn&fr2=fp-hotsearch-rev
+              - listitem [ref=e47]:
+                - link "定期存款優惠" [ref=e48] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E5%AE%9A%E6%9C%9F%E5%AD%98%E6%AC%BE%E5%84%AA%E6%83%A0&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e49]:
+                - link "香港去大阪機票" [ref=e50] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E9%A6%99%E6%B8%AF%E5%8E%BB%E5%A4%A7%E9%98%AA%E6%A9%9F%E7%A5%A8&fr=yfp-search-tn&fr2=fp-hotsearch-rev
+              - listitem [ref=e51]:
+                - link "伊朗局勢" [ref=e52] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E4%BC%8A%E6%9C%97%E5%B1%80%E5%8B%A2&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e53]:
+                - link "深圳酒店" [ref=e54] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E6%B7%B1%E5%9C%B3%E9%85%92%E5%BA%97&fr=yfp-search-tn&fr2=fp-hotsearch-rev
+              - listitem [ref=e55]:
+                - link "阿仙奴" [ref=e56] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E9%98%BF%E4%BB%99%E5%A5%B4&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e57]:
+                - link "居屋申請" [ref=e58] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E5%B1%85%E5%B1%8B%E7%94%B3%E8%AB%8B&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e59]:
+                - link "首岸" [ref=e60] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E9%A6%96%E5%B2%B8&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e61]:
+                - link "湯唯" [ref=e62] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E6%B9%AF%E5%94%AF&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e63]:
+                - link "電子煙法例" [ref=e64] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E9%9B%BB%E5%AD%90%E7%85%99%E6%B3%95%E4%BE%8B&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e65]:
+                - link "宏福苑聽證會" [ref=e66] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E5%AE%8F%E7%A6%8F%E8%8B%91%E8%81%BD%E8%AD%89%E6%9C%83&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e67]:
+                - link "3 Coins" [ref=e68] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=3%20Coins&fr=yfp-search-tn&fr2=fp-hotsearch
+              - listitem [ref=e69]:
+                - link "樂動機器人" [ref=e70] [cursor=pointer]:
+                  - /url: http://hk.search.yahoo.com/search?p=%E6%A8%82%E5%8B%95%E6%A9%9F%E5%99%A8%E4%BA%BA&fr=yfp-search-tn&fr2=fp-hotsearch
+    - generic [ref=e71]:
+      - region "廣告"
+      - generic [ref=e73]:
+        - navigation [ref=e74]:
+          - generic [ref=e75]:
+            - heading "全部服務" [level=2] [ref=e76]
+            - button "全部服務" [ref=e78] [cursor=pointer]:
+              - img [ref=e79]
+              - text: 全部服務
+            - list [ref=e81]:
+              - listitem [ref=e82]:
+                - link "財經" [ref=e83] [cursor=pointer]:
+                  - /url: https://hk.finance.yahoo.com/
+                  - generic [ref=e84]: 財經
+              - listitem [ref=e85]:
+                - link "新聞" [ref=e86] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com
+                  - generic [ref=e87]: 新聞
+              - listitem [ref=e88]:
+                - link "Mail" [ref=e89] [cursor=pointer]:
+                  - /url: https://hk.mail.yahoo.com/
+                  - generic [ref=e90]: Mail
+              - listitem [ref=e91]:
+                - link "體育" [ref=e92] [cursor=pointer]:
+                  - /url: https://hk.sports.yahoo.com/
+                  - generic [ref=e93]: 體育
+              - listitem [ref=e94]:
+                - link "字典" [ref=e95] [cursor=pointer]:
+                  - /url: https://hk.dictionary.yahoo.com/
+                  - generic [ref=e96]: 字典
+              - listitem [ref=e97]:
+                - link "天氣" [ref=e98] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/weather/
+                  - generic [ref=e99]: 天氣
+              - listitem [ref=e100]:
+                - link "娛樂圈" [ref=e101] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/celebrity
+                  - generic [ref=e102]: 娛樂圈
+              - listitem [ref=e103]:
+                - link "電影" [ref=e104] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/movies/
+                  - generic [ref=e105]: 電影
+              - listitem [ref=e106]:
+                - link "旅遊" [ref=e107] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/travel
+                  - generic [ref=e108]: 旅遊
+              - listitem [ref=e109]:
+                - link "Food" [ref=e110] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/food
+                  - generic [ref=e111]: Food
+              - listitem [ref=e112]:
+                - link "著數" [ref=e113] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/jetso/
+                  - generic [ref=e114]: 著數
+              - listitem [ref=e115]:
+                - link "Style" [ref=e116] [cursor=pointer]:
+                  - /url: https://hk.news.yahoo.com/style
+                  - generic [ref=e117]: Style
+            - button "更多" [ref=e119] [cursor=pointer]:
+              - img [ref=e120]
+              - text: 更多
+        - generic [ref=e122]:
+          - main [ref=e123]:
+            - generic [ref=e125]:
+              - heading "焦點新聞" [level=2] [ref=e126]
+              - tablist [ref=e127]:
+                - generic [ref=e128]:
+                  - tab "焦點" [selected] [ref=e129]
+                  - tab "搜選" [ref=e130]
+              - tabpanel [ref=e132]:
+                - list [ref=e133]:
+                  - listitem [ref=e134]:
+                    - heading "揭資助青年宿舍數目未達標 宿舍採購暖風機成本偏離市價3倍" [level=3] [ref=e136]:
+                      - link "揭資助青年宿舍數目未達標 宿舍採購暖風機成本偏離市價3倍" [ref=e137] [cursor=pointer]:
+                        - /url: https://hk.news.yahoo.com/%E6%8F%AD%E8%B3%87%E5%8A%A9%E9%9D%92%E5%B9%B4%E5%AE%BF%E8%88%8D%E6%95%B8%E7%9B%AE%E6%9C%AA%E9%81%94%E6%A8%99-%E5%AE%BF%E8%88%8D%E6%8E%A1%E8%B3%BC%E6%9A%96%E9%A2%A8%E6%A9%9F%E6%88%90%E6%9C%AC%E5%81%8F%E9%9B%A2%E5%B8%82%E5%83%B93%E5%80%8D-200000224.html
+                  - listitem [ref=e138]:
+                    - generic [ref=e139]:
+                      - heading "葵涌私家車超速 74歲婦代親人「頂包」被捕" [level=3] [ref=e141]:
+                        - link "葵涌私家車超速 74歲婦代親人「頂包」被捕" [ref=e142] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E8%91%B5%E6%B6%8C%E7%A7%81%E5%AE%B6%E8%BB%8A%E8%B6%85%E9%80%9F%E9%A7%95%E9%A7%9B-74%E6%AD%B2%E8%80%81%E5%A9%A6%E4%BB%A3%E8%A6%AA%E4%BA%BA-%E9%A0%82%E5%8C%85-%E8%A2%AB%E6%8D%95-084848854.html
+                      - paragraph [ref=e144]: 警方3月接獲報案，指一名女子涉嫌為親人的超速駕駛行為代為頂罪。中央交通攝影機違例調查組經深入調查後，今日（29日）拘捕一名74歲姓黃本地女子，涉妨礙司法公正。案情透露，2025年1月6日，一輛私家車在葵涌道被偵速攝影機偵測到超速行駛，案件交由中央交通攝影機違例調查組跟進。警員向涉案私家車車主發出「要求提交司機身份詳情通知書」，該名車主其後向警方稱一名姓黃女子為涉案司機，而該名姓黃女子亦向警方承認是當時違例司機。
+                  - listitem [ref=e146]:
+                    - generic [ref=e147]:
+                      - heading "林逸華律師行涉「撞車碰瓷黨」案 律師會介入" [level=3] [ref=e149]:
+                        - link "林逸華律師行涉「撞車碰瓷黨」案 律師會介入" [ref=e150] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E6%9E%97%E9%80%B8%E8%8F%AF%E5%BE%8B%E5%B8%AB%E8%A1%8C%E6%B6%89%E3%80%8C%E6%92%9E%E8%BB%8A%E7%A2%B0%E7%93%B7%E9%BB%A8%E3%80%8D%E6%A1%88-%E5%BE%8B%E5%B8%AB%E6%9C%83%E6%8C%87%E6%87%B7%E7%96%91%E6%B6%89%E4%B8%8D%E8%AA%A0%E5%AF%A6%E8%A1%8C%E7%82%BA-%E6%B1%BA%E5%AE%9A%E4%BB%8B%E5%85%A5%E6%A5%AD%E5%8B%99-020918918.html
+                      - paragraph [ref=e152]: 林逸華律師行捲入以交通意外敲詐賠償的「撞車碰瓷黨」，並就警方搜證提出司法覆核。律師會周三（29 日）確認已委任羅拔臣律師事務所為中介人，同日執行介入行動。律師會又指，經調查後有初步證據顯示，有理由懷疑該律師行涉及不誠實行為。
+                  - listitem [ref=e154]:
+                    - generic [ref=e155]:
+                      - heading "特朗普：我卸任前美國再度實現登月機率大" [level=3] [ref=e157]:
+                        - link "特朗普：我卸任前美國再度實現登月機率大" [ref=e158] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%B7%9D%E6%99%AE-%E6%88%91%E5%8D%B8%E4%BB%BB%E5%89%8D%E7%BE%8E%E5%9C%8B%E5%86%8D%E5%BA%A6%E5%AF%A6%E7%8F%BE%E7%99%BB%E6%9C%88%E6%A9%9F%E7%8E%87%E5%A4%A7-210502305.html
+                      - paragraph [ref=e160]: 美國總統川普今天表示，他認為美國國家航空暨太空總署（NASA）有「很大機會」在他卸任前再度將太空人送上月球。川普（Donald Trump）是在白宮橢圓形辦公室接見最近完成NASA阿提米絲2號（Artemis 2）繞月任務的4名太空人時，做出上述表示。
+                  - listitem [ref=e162]:
+                    - generic [ref=e163]:
+                      - heading "古天樂驚傳密婚！女主角曝光 網友提「7大重疊足跡」" [level=3] [ref=e165]:
+                        - link "古天樂驚傳密婚！女主角曝光 網友提「7大重疊足跡」" [ref=e166] [cursor=pointer]:
+                          - /url: https://tw.news.yahoo.com/%E5%8F%A4%E5%A4%A9%E6%A8%82%E9%A9%9A%E5%82%B3%E5%AF%86%E5%A9%9A%EF%BC%81%E7%A5%9E%E7%A5%95%E5%A5%B3%E4%B8%BB%E8%A7%92%E6%9B%9D%E5%85%89-%E7%B6%B2%E5%8F%8B%E6%8F%90%E3%80%8C7%E5%A4%A7%E9%87%8D%E7%96%8A%E8%B6%B3%E8%B7%A1%E3%80%8D%EF%BC%9A%E9%80%99%E4%B8%8D%E6%98%AF%E5%B7%A7%E5%90%88-012200463.html
+                      - paragraph [ref=e168]: 香港影壇巨星古天樂近日深陷密婚生子傳聞。儘管他曾以「其他一律雜音，我都不會回應」冷處理，但廣大網民並未收手，近日更鎖定一名千禧年代曾活躍於影壇的女演員林淑茵（Gloria Lam），認為她就是古天樂藏了十多年的神祕另一半。
+                  - listitem [ref=e170]:
+                    - generic [ref=e171]:
+                      - heading "木棍捅肛案 事主作供：懲教員用地拖棍捅肛門" [level=3] [ref=e173]:
+                        - link "木棍捅肛案 事主作供：懲教員用地拖棍捅肛門" [ref=e174] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E7%BE%88%E7%95%99%E8%80%85%E9%81%AD%E6%9C%A8%E6%A3%8D%E6%8D%85%E8%82%9B%E6%A1%88-%E4%BA%8B%E4%B8%BB%E4%BD%9C%E4%BE%9B%EF%BC%9A%E6%87%B2%E6%95%99%E5%93%A1%E7%94%A8%E5%9C%B0%E6%8B%96%E6%A3%8D%E6%8D%85%E8%82%9B%E9%96%80-%E5%9C%A8%E5%A0%B4%E5%85%B6%E4%BB%96%E5%9B%9A%E5%8F%8B%E7%82%BA%E3%80%8Cb%E4%BB%94%E3%80%8D-020732722.html
+                      - paragraph [ref=e176]: 壁屋懲教所 18 歲還押者懷疑被人用木棍捅肛門致造成永久傷害，須用人工造口。二級懲教助理和一羈留人士認罪；一級助理及另 3 在囚者不認罪，案件周三（29 日）在區院展開第三日審訊。
+                  - listitem [ref=e177]:
+                    - generic [ref=e178]:
+                      - heading "台北車站男子性侵香港女遊客 判囚5年2個月" [level=3] [ref=e180]:
+                        - link "台北車站男子性侵香港女遊客 判囚5年2個月" [ref=e181] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%8F%B0%E5%8C%97%E8%BB%8A%E7%AB%99%E7%94%B7%E5%AD%90%E6%80%A7%E4%BE%B5%E9%A6%99%E6%B8%AF%E5%A5%B3%E9%81%8A%E5%AE%A2-%E5%88%A4%E5%9B%9A5%E5%B9%B42%E5%80%8B%E6%9C%88-051325685.html
+                      - paragraph [ref=e183]: 台北車站男子性侵香港女遊客被判監禁5年2個月。 事發在去年10月，44歲被告邱勝明在台北車站大廳，性侵一名醉酒的71歲香港女遊客。警方其後接獲一名外國旅客報案，將他拘捕，被控趁機性交等罪名。台灣傳媒報道，他被捕後一度認罪，但之後又推翻供詞。控方認為他態度惡劣，因此求刑7年。而被告之前因偷竊被判囚6個月，但因未有服刑，也沒繳納罰款代替，而成為通緝犯。台北地方法院早上一審判處他監禁5年2個月，可上訴。
+                  - listitem [ref=e185]:
+                    - generic [ref=e186]:
+                      - heading "城門河驚現「脹卜卜」五爪金龍 惹鱷魚驚魂" [level=3] [ref=e188]:
+                        - link "城門河驚現「脹卜卜」五爪金龍 惹鱷魚驚魂" [ref=e189] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%9F%8E%E9%96%80%E6%B2%B3%E9%A9%9A%E7%8F%BE%E3%80%8C%E8%84%B9%E5%8D%9C%E5%8D%9C%E3%80%8D%E4%BA%94%E7%88%AA%E9%87%91%E9%BE%8D-%E6%83%B9%E9%B1%B7%E9%AD%9A%E9%A9%9A%E9%AD%82-154815147.html
+                      - paragraph [ref=e191]: 東網接獲讀者報料，指今晨(29日)11時許，在沙田城門河近香港文化博物館對開行人天橋位置對開，發現一條巨蜥在河中暢泳，疑為五爪金龍，其體形豐滿、腹肚脹起、約5呎長、深啡色，在河中游弋，期間不時伸出長舌，四處張望，似正在覓食，往大圍方向游去，最後不知所終。期間不少巿民用手機拍下，亦有人擔心巨蜥為鱷魚，致電政府服務的1823熱線，通知漁護署跟進。
+                  - listitem [ref=e193]:
+                    - generic [ref=e194]:
+                      - heading "吳彥祖久違拍港片自曝「沒人找我」 揭《寒戰》露肉戲真相" [level=3] [ref=e196]:
+                        - link "吳彥祖久違拍港片自曝「沒人找我」 揭《寒戰》露肉戲真相" [ref=e197] [cursor=pointer]:
+                          - /url: https://tw.news.yahoo.com/%E5%90%B3%E5%BD%A5%E7%A5%96%E4%B9%85%E9%81%95%E6%8B%8D%E6%B8%AF%E7%89%87%E8%87%AA%E6%9B%9D%E3%80%8C%E6%B2%92%E4%BA%BA%E6%89%BE%E6%88%91%E3%80%8D-%E6%8F%AD%E3%80%8A%E5%AF%92%E6%88%B0%E3%80%8B%E9%9C%B2%E8%82%89%E6%88%B2%E7%9C%9F%E7%9B%B8%EF%BC%9A%E6%B2%92%E6%83%B3%E5%88%B0%E9%82%A3%E5%80%8B%E6%95%88%E6%9E%9C-033445011.html
+                      - paragraph [ref=e199]: 電影《寒戰1994》即將上映，導演梁樂民、主要演員吳彥祖、劉俊謙、謝君豪27日接受台灣媒體訪問。吳彥祖睽違多年重返香港影壇，他笑稱之所以這麼久沒拍港片，並非不想拍，而是「沒人找我（笑）」。重返熟悉的香港劇組，他感性形容像回到了大家庭，與美國的分工模式不同，「不像美國跟導演拍完可能就不會再見到。在香港拍戲最舒服，工作人員都是跟我一起長大的」。
+                  - listitem [ref=e201]
+                  - listitem [ref=e205]:
+                    - generic [ref=e206]:
+                      - heading "香港證監會進駐小紅書 留言區變苦主區" [level=3] [ref=e208]:
+                        - link "香港證監會進駐小紅書 留言區變苦主區" [ref=e209] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E7%A4%BE%E4%BA%A4%E5%AA%92%E9%AB%94-%E9%A6%99%E6%B8%AF%E8%AD%89%E7%9B%A3%E6%9C%83%E9%80%B2%E9%A7%90%E5%B0%8F%E7%B4%85%E6%9B%B8-%E7%95%99%E8%A8%80%E5%8D%80%E8%AE%8A%E8%8B%A6%E4%B8%BB%E5%8D%80-%E7%B6%B2%E6%B0%91%E6%87%87%E6%B1%82%E6%95%91%E6%95%91%E7%A7%91%E6%8C%87-%E5%B9%B4%E5%88%9D%E8%87%B3%E4%BB%8A%E8%B7%8C%E9%80%BE-063630446.html
+                      - paragraph [ref=e211]: 香港證監會為了更好接觸內地投資者，近日正式開通了內地社交媒體平台小紅書，並稱會分享證監會的最新動態、投資警示信...
+            - generic [ref=e213]:
+              - heading "熱門新聞" [level=2] [ref=e214]
+              - tablist [ref=e216]:
+                - tab "推介" [ref=e217]
+                - tab "港聞" [ref=e218]
+                - tab "娛樂" [ref=e219]
+                - tab "Style" [ref=e220]
+                - tab "體育" [ref=e221]
+                - tab "財經" [ref=e222]
+                - tab "玩樂" [ref=e223]
+              - list [ref=e226]:
+                - listitem [ref=e227]:
+                  - generic [ref=e228]:
+                    - img "【歐聯4強】「聖」「仁」鋒銳強撼強" [ref=e231]
+                    - generic [ref=e232]:
+                      - heading "【歐聯4強】「聖」「仁」鋒銳強撼強" [level=3] [ref=e233]:
+                        - link "【歐聯4強】「聖」「仁」鋒銳強撼強" [ref=e234] [cursor=pointer]:
+                          - /url: https://hk.sports.yahoo.com/news/%E6%AD%90%E8%81%AF4%E5%BC%B7-%E8%81%96-%E4%BB%81-%E9%8B%92%E9%8A%B3%E5%BC%B7%E6%92%BC%E5%BC%B7-230944219.html
+                      - paragraph [ref=e235]: 【Now Sports】歐聯來到4強階段，兩個戲碼呈現不同風格，率先在周二上演的巴黎聖日耳日門迎擊拜仁慕尼黑，是本屆兩隊鋒力最強球隊之間的角力。巴黎聖日耳門去屆歷史性贏得歐聯錦標，今屆以相同班底爭取衛冕，去屆的出色表現，為奧斯文丹比利帶來金球獎，到今屆亦不乏佳作，加上擅於個人突破的基化史基尼亞，再配合日趨成熟的杜爾及巴特利巴高拿，4人靈活交替走位，快速又擅爆破，被形容為「無處不在」。PSG本屆至今14場比賽狂轟38球，剛好與今仗對手拜仁慕尼黑睇齊，而上一圈兩回合總計大炒利物浦4:0的水銀瀉地攻勢，會否在今仗重現？同樣入38球，拜仁慕尼黑實際上少賽兩場，可謂賽事至今的入球王。歐洲足協撰文介紹4強時，形容路爾斯迪亞斯及奧拉斯，猶如昔年的列貝利與洛賓，至於哈利簡尼繼續入球停不了，這個攻擊組合既令拜仁以入球破百的強勢，早已提早揚威德甲，如今爭取自2019/20年以來再次屹立歐洲之巔。巴黎聖日耳門 VS 拜仁慕尼黑5 歐洲系數排名 14勝2和2負（第11名） 聯賽階段戰績 7勝1負（第2名）38/17 入球/失球數目 38/14基化史基尼亞（8球） 首席射手 哈利簡尼（12球）冠軍 （1次） 歷
+                      - generic [ref=e236]: now.com 體育・2 天前
+                - listitem [ref=e237]:
+                  - generic [ref=e243] [cursor=pointer]:
+                    - link "Image for Taboola Advertising Unit" [ref=e244]:
+                      - /url: https://track.genius-markets.com/c195b472-0f17-4122-83ce-7c60ab795d4b
+                      - img "Image for Taboola Advertising Unit" [ref=e246]
+                    - 'link "The best shoes for walking and standing all day Free Motion Shoes in Taboola advertising section · Sponsored: learn about this recommendation (opens dialog)" [ref=e248]':
+                      - /url: https://track.genius-markets.com/c195b472-0f17-4122-83ce-7c60ab795d4b
+                      - generic [ref=e249]:
+                        - link "The best shoes for walking and standing all day" [ref=e250]
+                        - generic [ref=e251]:
+                          - link "Free Motion Shoes in Taboola advertising section" [ref=e252]: Free Motion Shoes
+                          - generic [ref=e253]: ·
+                          - 'link "Sponsored: learn about this recommendation (opens dialog)" [ref=e255]':
+                            - /url: "https://popup.taboola.com/en/?template=colorbox&utm_source=yahoo-homepage-hongkong&utm_medium=referral&utm_content=stream-twhk-c-v2:taboola-twhk-stream-revamp-v2-tab1-2:"
+                            - text: Ad
+                - listitem [ref=e256]:
+                  - generic [ref=e257]:
+                    - img "新盤奇則｜恒地土瓜灣壹沐「三房超神則」 3房實用面積不足400方呎" [ref=e260]
+                    - generic [ref=e261]:
+                      - heading "新盤奇則｜恒地土瓜灣壹沐「三房超神則」 3房實用面積不足400方呎" [level=3] [ref=e262]:
+                        - link "新盤奇則｜恒地土瓜灣壹沐「三房超神則」 3房實用面積不足400方呎" [ref=e263] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E6%96%B0%E7%9B%A4%E5%A5%87%E5%89%87-%E6%81%92%E5%9C%B0%E5%9C%9F%E7%93%9C%E7%81%A3%E5%A3%B9%E6%B2%90-%E4%B8%89%E6%88%BF%E8%B6%85%E7%A5%9E%E5%89%87-3%E6%88%BF%E5%AF%A6%E7%94%A8%E9%9D%A2%E7%A9%8D%E4%B8%8D%E8%B6%B3400%E6%96%B9%E5%91%8E-040039669.html
+                      - paragraph [ref=e264]: 恒地（012）再創「奇則」！3房單位實用面積竟然不足400方呎，要知道，坊間住宅單位400方呎以下一般都是兩房...
+                      - generic [ref=e265]: BossMind・1 天前
+                - listitem [ref=e266]:
+                  - generic [ref=e267]:
+                    - img "紐約外食貴到吃不起 報告曝10年間漲逾43%" [ref=e270]
+                    - generic [ref=e271]:
+                      - heading "紐約外食貴到吃不起 報告曝10年間漲逾43%" [level=3] [ref=e272]:
+                        - link "紐約外食貴到吃不起 報告曝10年間漲逾43%" [ref=e273] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E7%B4%90%E7%B4%84%E5%A4%96%E9%A3%9F%E8%B2%B4%E5%88%B0%E5%90%83%E4%B8%8D%E8%B5%B7-%E5%A0%B1%E5%91%8A%E6%9B%9D10%E5%B9%B4%E9%96%93%E6%BC%B2%E9%80%BE43-073502327.html
+                      - paragraph [ref=e274]: （法新社紐約28日電） 全美物價飆漲，被譽為「全球美食之都」的紐約感受尤其深刻。美國民眾正飽受生活成本高漲所苦，在紐約感受尤其深刻，這也是紐約現任左翼市長曼達尼（Zohran Mamdani）競選時宣示要解決的主要政見。
+                      - generic [ref=e275]: 法新社・2 天前
+                - listitem [ref=e276]:
+                  - generic [ref=e277]:
+                    - img "舒淇丈夫馮德倫炒樓失手 劈價2成沽63 Pokfulam一房 持貨6年賬蝕134萬" [ref=e280]
+                    - generic [ref=e281]:
+                      - heading "舒淇丈夫馮德倫炒樓失手 劈價2成沽63 Pokfulam一房 持貨6年賬蝕134萬" [level=3] [ref=e282]:
+                        - link "舒淇丈夫馮德倫炒樓失手 劈價2成沽63 Pokfulam一房 持貨6年賬蝕134萬" [ref=e283] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E8%88%92%E6%B7%87%E4%B8%88%E5%A4%AB%E9%A6%AE%E5%BE%B7%E5%80%AB%E7%82%92%E6%A8%93%E5%A4%B1%E6%89%8B-%E5%8A%88%E5%83%B92%E6%88%90%E6%B2%BD63-pokfulam-%E6%88%BF-%E6%8C%81%E8%B2%A86%E5%B9%B4%E8%B3%AC%E8%9D%95134%E8%90%AC-022310579.html
+                      - paragraph [ref=e284]: 樓市升溫，惟高位入市業主仍需蝕讓離場。本港演員及導演、金馬影后舒淇丈夫馮德倫，近期劈價2成以705萬元售出西營盤63 Pokfulam一伙一房戶，持貨約6年賬蝕134.7萬元或約16%。更多消息：「撈底王」馬榮成沽金融海嘯貨 山頂道8號豪宅1.05億易手 17年勁賺4,580萬元陳奕迅經理人豪擲1.4億入市 購鴨脷洲凱玥4房 呎價3.8萬 較樓下同類單位平近2成上述成交單位為63 Pokfulam 2座中層C室，實用面積271平方呎，採一房間隔，早於2023年中起以870萬元放售，其後多次減價，終於上月底以705萬元沽出，呎價26,015元，累減165萬或約19%。資料顯示，單位原業主為馮進財（馮德倫本名），於2020年6月斥839.7萬元一手購入該單位，其後一直作收租用途，包括2020年曾以每月2.2萬元放租，持貨約6年轉手，賬讓134.7萬元，單位期間貶值約16%。據了解，馮德倫善於投資物業，曾炒賣薄扶林寶翠園、銅鑼灣禮頓山及九龍站凱旋門單位，合共大賺1,427萬元。馮德倫妻子、「金馬影后」舒淇亦於2018年豪斥1.27億元買入西半山般咸道18號yoo 18 Bonham高層海景複
+                      - generic [ref=e285]: 28Hse.com・1 天前
+                - listitem [ref=e286]:
+                  - generic [ref=e287]:
+                    - img "宏道閣業主佔3上樓名額 租客：點解政府幫唔到" [ref=e290]
+                    - generic [ref=e291]:
+                      - heading "宏道閣業主佔3上樓名額 租客：點解政府幫唔到" [level=3] [ref=e292]:
+                        - link "宏道閣業主佔3上樓名額 租客：點解政府幫唔到" [ref=e293] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%AE%8F%E9%81%93%E9%96%A3%E6%A5%AD%E4%B8%BB%E4%BD%943%E4%B8%8A%E6%A8%93%E5%90%8D%E9%A1%8D-%E7%A7%9F%E5%AE%A2-%E9%BB%9E%E8%A7%A3%E6%94%BF%E5%BA%9C%E5%B9%AB%E5%94%94%E5%88%B0-200000487.html
+                      - paragraph [ref=e294]: 大埔宏福苑居民繼續分批返家執拾物品，當局昨日續安排宏道閣及宏昌閣居民上樓。有租住宏道閣單位的居民反映，政府安排的4個上樓名額中，業主佔用其中3個，只容許簽訂租約的兒子一人上樓，她只能留在樓下等候。年近70歲、租住宏道閣單位的何女士表示，業主只准許兒子一人上樓，但對方並非居於單位，直言「自己先知自己啲嘢放邊」。她透露，單位內只有洗衣機及冷氣機屬於業主，「屋內全部嘢都係我嘅」。何女士又指，曾嘗試與業主溝通，提出與兒子一同上樓，她可以不入屋、只在走廊即時決定帶走哪些財物亦可，但未獲接納。她亦曾就上樓名額問題向社工及區議員求助，惟未能成功爭取。她引述政務司副司長卓永興曾表示會給予租客酌情處理，質疑「唔明白點解政府唔可以幫我哋」。
+                      - generic [ref=e295]: am730・2 天前
+                - listitem [ref=e296]:
+                  - generic [ref=e302] [cursor=pointer]:
+                    - link "Image for Taboola Advertising Unit" [ref=e303]:
+                      - /url: https://www.skyler.hk/products/the-skyler-mattress
+                      - img "Image for Taboola Advertising Unit" [ref=e305]
+                    - 'link "Mattress Can’t Fit In The Lift? This Matt ress Comes In A Box Skyler Mattress in Taboola advertising section · Sponsored: learn about this recommendation (opens dialog)" [ref=e307]':
+                      - /url: https://www.skyler.hk/products/the-skyler-mattress
+                      - generic [ref=e308]:
+                        - link "Mattress Can’t Fit In The Lift? This Matt ress Comes In A Box" [ref=e309]
+                        - generic [ref=e310]:
+                          - link "Skyler Mattress in Taboola advertising section" [ref=e311]: Skyler Mattress
+                          - generic [ref=e312]: ·
+                          - 'link "Sponsored: learn about this recommendation (opens dialog)" [ref=e314]':
+                            - /url: "https://popup.taboola.com/en/?template=colorbox&utm_source=yahoo-homepage-hongkong&utm_medium=referral&utm_content=stream-twhk-c-v2:taboola-twhk-stream-revamp-v2-tab1-8:"
+                            - text: Ad
+                - listitem [ref=e315]:
+                  - generic [ref=e316]:
+                    - img "粉嶺繞道東段周日通車 聯和墟出市區料快10分鐘" [ref=e319]
+                    - generic [ref=e320]:
+                      - heading "粉嶺繞道東段周日通車 聯和墟出市區料快10分鐘" [level=3] [ref=e321]:
+                        - link "粉嶺繞道東段周日通車 聯和墟出市區料快10分鐘" [ref=e322] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E7%B2%89%E5%B6%BA%E7%B9%9E%E9%81%93%E6%9D%B1%E6%AE%B5%E5%91%A8%E6%97%A5%E9%80%9A%E8%BB%8A-%E8%81%AF%E5%92%8C%E5%A2%9F%E5%87%BA%E5%B8%82%E5%8D%80%E6%96%99%E5%BF%AB10%E5%88%86%E9%90%98-051625454.html
+                      - paragraph [ref=e323]: 【Now新聞台】粉嶺繞道東段周日通車，聯和墟一帶的居民日後出九龍市區，可以避開粉嶺區內擠塞路段，比現時快大約10分鐘。粉嶺繞道東段是北部都會區首個落成的大型運輸基建，連接現有的粉嶺公路以及粉嶺北新發展區，經過塘坑、龍躍頭，再沿梧桐河畔伸延至石湖新村，全長約4公里。星期日通車之後，龍躍頭、聯和墟一帶的居民出市區就會更方便。土木工程拓展署總工程師張柏堅：「龍躍頭其實都有很多現有鄉村，以及聯和墟有很多居民。他利用繞道的話，由家出發前往九龍就會節省10分鐘，因為舊路他要經過馬會路、沙頭角公路，這段龍躍頭段其實有很多燈位，繁忙時間交通都非常大，所以我們這條粉嶺繞道不止便利到粉嶺北新發展區一些新發展，亦是連繫城鄉的。」繞道途經龍躍頭交匯處，當中有一個全球首例、採用S960國產超高強度鋼材建造的環形行人天橋新地標，強度是一般鋼材的三倍，令到橋身設計更纖巧。土木工程拓展署高級工程師梁偉樂：「纖巧的橋樑有一件事我們要注意，就是當有人在上面走動或跑步時，會否產生一些震動，從而令到行人覺得為何這條橋會動、有點害怕，是不可以這樣的。所以我們今次跟從國際標準，做了一次橋樑動態測試，有很大群人在上面走路，看看橋的
+                      - generic [ref=e324]: now.com 新聞・2 天前
+                - listitem [ref=e325]:
+                  - generic [ref=e326]:
+                    - img "南豐紗廠對狗狗墮樓感痛心難過 暫時關閉三樓天台全面檢視設施" [ref=e329]
+                    - generic [ref=e330]:
+                      - heading "南豐紗廠對狗狗墮樓感痛心難過 暫時關閉三樓天台全面檢視設施" [level=3] [ref=e331]:
+                        - link "南豐紗廠對狗狗墮樓感痛心難過 暫時關閉三樓天台全面檢視設施" [ref=e332] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%8D%97%E8%B1%90%E7%B4%97%E5%BB%A0%E5%B0%8D%E7%8B%97%E7%8B%97%E5%A2%AE%E6%A8%93%E6%84%9F%E7%97%9B%E5%BF%83%E9%9B%A3%E9%81%8E-%E6%9A%AB%E6%99%82%E9%97%9C%E9%96%89%E4%B8%89%E6%A8%93%E5%A4%A9%E5%8F%B0%E5%85%A8%E9%9D%A2%E6%AA%A2%E8%A6%96%E8%A8%AD%E6%96%BD-085751995.html
+                      - paragraph [ref=e333]: 【動物專訊】很多人帶狗遊玩的南豐紗廠，日前發生狗狗「熊熊」從3樓天台「汪汪大道Woof Avenue」墮樓慘死事件，該場地圍欄高度安全引起關注。南豐紗廠表示，對事件深感痛心及難過，會全面檢視場內設施，暫時關閉3樓天台，並取消原定於5月2日至3日舉辦的「毛孩CHILL玩祭」活動。事發當日於南豐紗廠1樓協助舉辦領養日的Suppaw則表示，未來領養日會加強場地安全及活動流程監督，確保每位毛孩都必需上繩及在安全環境下進行領養活動。 事發於4月26日，當時11個月大的唐狗熊熊由一名暫託人帶到領養日尋家，於下午2時許帶熊熊到3樓天台狗公園遊玩，詎料狗狗突然跳過圍欄，由3樓直墮地下。雖然暫託人和獸醫及義工等即時將熊熊帶到獸醫診所急救，惜狗狗最終不幸離世。 有指南豐紗廠3樓天台狗公園的圍欄不足110厘米，狗狗很容易跳過，雖然場地寫明要牽繩，但熊熊出事時並沒有上繩。南豐紗廠發表聲明表示，會暫時關閉相關場地，並會全面檢視場內設施，邀請動物團體及主人提供意見。 聲明全文如下： 「對於近日發生的寵物不幸事件，我們深感痛心及難過。南豐紗廠自活化以來，一直致力推廣「人寵共融」理念。 近日我們收到不少意見與回饋，對
+                      - generic [ref=e334]: 香港動物報・2 天前
+                - listitem [ref=e335]:
+                  - generic [ref=e336]:
+                    - img "幽默回川普 查爾斯三世：若非英國人 美國人得說法語" [ref=e339]
+                    - generic [ref=e340]:
+                      - heading "幽默回川普 查爾斯三世：若非英國人 美國人得說法語" [level=3] [ref=e341]:
+                        - link "幽默回川普 查爾斯三世：若非英國人 美國人得說法語" [ref=e342] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%B9%BD%E9%BB%98%E5%9B%9E%E5%B7%9D%E6%99%AE-%E6%9F%A5%E7%88%BE%E6%96%AF%E4%B8%89%E4%B8%96-%E8%8B%A5%E9%9D%9E%E8%8B%B1%E5%9C%8B%E4%BA%BA-%E7%BE%8E%E5%9C%8B%E4%BA%BA%E5%BE%97%E8%AA%AA%E6%B3%95%E8%AA%9E-060501312.html
+                      - paragraph [ref=e343]: （法新社華盛頓28日電） 英王查爾斯三世（King Charles III）今天在白宮國宴上幽默回應美國總統川普，他開玩笑地說如果沒有英國人，美國人現在都說法語了。查爾斯所指的是北美具有英國和法國淵源的地區，這兩個昔日的殖民強權曾為爭奪北美大陸控制權而激烈爭鬥，直到約250年前美國獨立。
+                      - generic [ref=e344]: 法新社・1 天前
+                - listitem [ref=e345]:
+                  - generic [ref=e346]:
+                    - img "【人物】港媽 Alice 陪伴自閉症孩子完賽倫敦馬 完成二人第 101 隻 42 公里以上賽事" [ref=e349]
+                    - generic [ref=e350]:
+                      - heading "【人物】港媽 Alice 陪伴自閉症孩子完賽倫敦馬 完成二人第 101 隻 42 公里以上賽事" [level=3] [ref=e351]:
+                        - link "【人物】港媽 Alice 陪伴自閉症孩子完賽倫敦馬 完成二人第 101 隻 42 公里以上賽事" [ref=e352] [cursor=pointer]:
+                          - /url: https://hk.sports.yahoo.com/news/%E4%BA%BA%E7%89%A9-%E6%B8%AF%E5%AA%BD-alice-%E9%99%AA%E4%BC%B4%E8%87%AA%E9%96%89%E7%97%87%E5%AD%A9%E5%AD%90%E5%AE%8C%E8%B3%BD%E5%80%AB%E6%95%A6%E9%A6%AC-%E5%AE%8C%E6%88%90%E4%BA%8C%E4%BA%BA%E7%AC%AC-120000330.html
+                      - paragraph [ref=e353]: 一如以往，本屆倫敦馬拉松亦吸引不少香港跑者前往參賽，其中在本地跑圈擁有不少支持者的港媽 Alice，跟患有自閉症的兒子善仔再度攜手馳騁在倫敦賽道，完成二人第 101 隻 42 公里以上的賽事（路跑、越...
+                      - generic [ref=e354]: 運動筆記・2 天前
+                - listitem [ref=e355]:
+                  - generic [ref=e361] [cursor=pointer]:
+                    - link "Image for Taboola Advertising Unit" [ref=e362]:
+                      - /url: https://www.skyler.hk
+                      - img "Image for Taboola Advertising Unit" [ref=e364]
+                    - 'link "Don’t Get Enough Sleep? Maybe Time To Upgrade Your Mattress Skyler Mattress in Taboola advertising section · Sponsored: learn about this recommendation (opens dialog)" [ref=e366]':
+                      - /url: https://www.skyler.hk
+                      - generic [ref=e367]:
+                        - link "Don’t Get Enough Sleep? Maybe Time To Upgrade Your Mattress" [ref=e368]
+                        - generic [ref=e369]:
+                          - link "Skyler Mattress in Taboola advertising section" [ref=e370]: Skyler Mattress
+                          - generic [ref=e371]: ·
+                          - 'link "Sponsored: learn about this recommendation (opens dialog)" [ref=e373]':
+                            - /url: "https://popup.taboola.com/en/?template=colorbox&utm_source=yahoo-homepage-hongkong&utm_medium=referral&utm_content=stream-twhk-c-v2:taboola-twhk-stream-revamp-v2-tab1-13:"
+                            - text: Ad
+                - listitem [ref=e374]:
+                  - generic [ref=e375]:
+                    - img "鮑爾卸任主席不離職！留任Fed理事待調查結束 談川普抨擊「史無前例」" [ref=e378]
+                    - generic [ref=e379]:
+                      - heading "鮑爾卸任主席不離職！留任Fed理事待調查結束 談川普抨擊「史無前例」" [level=3] [ref=e380]:
+                        - link "鮑爾卸任主席不離職！留任Fed理事待調查結束 談川普抨擊「史無前例」" [ref=e381] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E9%AE%91%E7%88%BE%E5%8D%B8%E4%BB%BB%E4%B8%BB%E5%B8%AD%E4%B8%8D%E9%9B%A2%E8%81%B7-%E7%95%99%E4%BB%BBfed%E7%90%86%E4%BA%8B%E5%BE%85%E8%AA%BF%E6%9F%A5%E7%B5%90%E6%9D%9F-%E8%AB%87%E5%B7%9D%E6%99%AE%E6%8A%A8%E6%93%8A-%E5%8F%B2%E7%84%A1%E5%89%8D%E4%BE%8B-190653217.html
+                      - paragraph [ref=e382]: 美國聯準會 (Fed) 主席鮑爾 (Jerome Powell) 周三 (29 日) 表示，他將在主席任期結束後繼續留任理事一段時間，直到有關央行總部大樓裝修工程的調查結束為止，這番表態暫時化解市場對他未來去向的疑慮。 鮑爾在會後記者會開場時說：「我曾說過，在該調查真正結束、
+                      - generic [ref=e383]: 鉅亨網・16 小時前
+                - listitem [ref=e384]:
+                  - generic [ref=e385]:
+                    - img "捲到香港？｜京東再次挑機HKTVmall 暗諷「只係比85折 有啲孤寒」推「日日8折」優惠搶客" [ref=e388]
+                    - generic [ref=e389]:
+                      - heading "捲到香港？｜京東再次挑機HKTVmall 暗諷「只係比85折 有啲孤寒」推「日日8折」優惠搶客" [level=3] [ref=e390]:
+                        - link "捲到香港？｜京東再次挑機HKTVmall 暗諷「只係比85折 有啲孤寒」推「日日8折」優惠搶客" [ref=e391] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E6%8D%B2%E5%88%B0%E9%A6%99%E6%B8%AF-%E4%BA%AC%E6%9D%B1%E5%86%8D%E6%AC%A1%E6%8C%91%E6%A9%9Fhktvmall-%E6%9A%97%E8%AB%B7-%E5%8F%AA%E4%BF%82%E6%AF%9485%E6%8A%98-%E6%9C%89%E5%95%B2%E5%AD%A4%E5%AF%92-111610129.html
+                      - paragraph [ref=e392]: 內地電商巨頭京東（9618）繼續燒銀紙強勢攻港，睇住本港競爭對手來打，推出「京東超市日日8折」搶客。京東港澳在...
+                      - generic [ref=e393]: BossMind・1 天前
+                - listitem [ref=e394]:
+                  - generic [ref=e395]:
+                    - img "Nvidia剛公布一項重大量子運算進展" [ref=e398]
+                    - generic [ref=e399]:
+                      - heading "Nvidia剛公布一項重大量子運算進展" [level=3] [ref=e400]:
+                        - link "Nvidia剛公布一項重大量子運算進展" [ref=e401] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/nvidia%E5%89%9B%E5%85%AC%E5%B8%83-%E9%A0%85%E9%87%8D%E5%A4%A7%E9%87%8F%E5%AD%90%E9%81%8B%E7%AE%97%E9%80%B2%E5%B1%95-110000957.html
+                      - paragraph [ref=e402]: Nvidia近日宣布另一項重大的量子運算進展，有望比市場想像中更快，將量子電腦帶入更廣泛應用。
+                      - generic [ref=e403]: HK MoneyClub・1 天前
+                - listitem [ref=e404]:
+                  - generic [ref=e405]:
+                    - img "尹錫悅妨害拘留案二審遭加重刑期 將再上訴" [ref=e408]
+                    - generic [ref=e409]:
+                      - heading "尹錫悅妨害拘留案二審遭加重刑期 將再上訴" [level=3] [ref=e410]:
+                        - link "尹錫悅妨害拘留案二審遭加重刑期 將再上訴" [ref=e411] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E5%B0%B9%E9%8C%AB%E6%82%85%E5%A6%A8%E5%AE%B3%E6%8B%98%E7%95%99%E6%A1%88%E4%BA%8C%E5%AF%A9%E9%81%AD%E5%8A%A0%E9%87%8D%E5%88%91%E6%9C%9F-%E5%B0%87%E5%86%8D%E4%B8%8A%E8%A8%B4-112003624.html
+                      - paragraph [ref=e412]: （法新社首爾29日電） 韓國前總統尹錫悅涉嫌妨害拘留案二審今天宣判，上訴法院將原本的5年刑期增至7年，律師團已表示將上訴至最高法院，而這只是尹錫悅身陷的8起刑事訴訟之一。尹錫悅律師團今天表示，將向最高法院提出上訴，並批評上訴法院犯了錯，將僵硬的法律原則運用在可能被視為政治行為的事件上。
+                      - generic [ref=e413]: 法新社・1 天前
+                - listitem [ref=e414]:
+                  - generic [ref=e420] [cursor=pointer]:
+                    - link "Image for Taboola Advertising Unit" [ref=e421]:
+                      - /url: https://trendingboom.com/jetterix-en-c
+                      - img "Image for Taboola Advertising Unit" [ref=e423]
+                    - 'link "This Simple Trick Turns Any Garden Hose Into a Power Washer Jetterix in Taboola advertising section · Sponsored: learn about this recommendation (opens dialog)" [ref=e425]':
+                      - /url: https://trendingboom.com/jetterix-en-c
+                      - generic [ref=e426]:
+                        - link "This Simple Trick Turns Any Garden Hose Into a Power Washer" [ref=e427]
+                        - generic [ref=e428]:
+                          - link "Jetterix in Taboola advertising section" [ref=e429]: Jetterix
+                          - generic [ref=e430]: ·
+                          - 'link "Sponsored: learn about this recommendation (opens dialog)" [ref=e432]':
+                            - /url: "https://popup.taboola.com/en/?template=colorbox&utm_source=yahoo-homepage-hongkong&utm_medium=referral&utm_content=stream-twhk-c-v2:taboola-twhk-stream-revamp-v2-tab1-18:"
+                            - text: Ad
+                - listitem [ref=e433]:
+                  - generic [ref=e434]:
+                    - img "即便Russell於邁阿密再被Antonelli擊敗也無須恐慌" [ref=e437]
+                    - generic [ref=e438]:
+                      - heading "即便Russell於邁阿密再被Antonelli擊敗也無須恐慌" [level=3] [ref=e439]:
+                        - link "即便Russell於邁阿密再被Antonelli擊敗也無須恐慌" [ref=e440] [cursor=pointer]:
+                          - /url: https://hk.sports.yahoo.com/news/%E5%8D%B3%E4%BE%BFrussell%E6%96%BC%E9%82%81%E9%98%BF%E5%AF%86%E5%86%8D%E8%A2%ABantonelli%E6%93%8A%E6%95%97%E4%B9%9F%E7%84%A1%E9%A0%88%E6%81%90%E6%85%8C-022315325.html
+                      - paragraph [ref=e441]: 即便Russell於邁阿密再被Antonelli擊敗也無須恐慌 Sam Bloxham 就算在即將到來的邁阿密GP中，再次被隊友Andrea Kimi Antonelli擊敗，George Russell也無須感到恐慌，這是前IndyCar車手、現任F1 TV主持人James Hinchcliffe給予他的建言。在2026賽季前三場比賽結束之後，Russell在車手積分榜上落後仍未滿20歲的義大利隊友9分，儘管英國車手仍被視為世界冠軍的大熱門，但Antonelli顯然已構成威脅。現年28歲的Russell有著強勁的賽季開局，率先贏得澳洲GP以及中國GP衝刺賽，但上海的排位賽中遭遇麻煩，以及日本GP安全車部署時機不利於他，讓Antonelli得以拿下關鍵積分。邁阿密GP前夕，Hinchcliffe在F1 Nation Podcast中表示，即便Russell在邁阿密國際賽道的比賽中再次敗給Antonelli，他也不應該感到恐慌。Hinchcliffe解釋說：「他確實需要扭轉局勢，但我認為這件事並沒有外界說的那樣急迫。」「現在不過才來到第四回合，還有很多比賽要跑。我們可以回顧一下，去年暑休
+                      - generic [ref=e442]: Racingnet・9 小時前
+                - listitem [ref=e443]:
+                  - generic [ref=e444]:
+                    - img "【話題】12小時完成倫敦馬拉松 最後一名完成者 Clair Roberts：「我為自己感到驕傲！」" [ref=e447]
+                    - generic [ref=e448]:
+                      - heading "【話題】12小時完成倫敦馬拉松 最後一名完成者 Clair Roberts：「我為自己感到驕傲！」" [level=3] [ref=e449]:
+                        - link "【話題】12小時完成倫敦馬拉松 最後一名完成者 Clair Roberts：「我為自己感到驕傲！」" [ref=e450] [cursor=pointer]:
+                          - /url: https://hk.sports.yahoo.com/news/%E8%A9%B1%E9%A1%8C-12%E5%B0%8F%E6%99%82%E5%AE%8C%E6%88%90%E5%80%AB%E6%95%A6%E9%A6%AC%E6%8B%89%E6%9D%BE-%E6%9C%80%E5%BE%8C-%E5%90%8D%E5%AE%8C%E6%88%90%E8%80%85-clair-170000491.html
+                      - paragraph [ref=e451]: 本屆倫敦馬拉松最後一名完成者 Clair Roberts，以 12 小時 16 分鐘完成了比賽，在英國時間周日午夜前抵達終點。她表示，能為一所在她人生「非常黑暗」時期拯救了她的慈善機構籌款，是她「莫大...
+                      - generic [ref=e452]: 運動筆記・18 小時前
+                - listitem [ref=e453]:
+                  - generic [ref=e454]:
+                    - img "五一黃金周假期料海上活動增 漁護署加強巡視西貢橋咀洲" [ref=e457]
+                    - generic [ref=e458]:
+                      - heading "五一黃金周假期料海上活動增 漁護署加強巡視西貢橋咀洲" [level=3] [ref=e459]:
+                        - link "五一黃金周假期料海上活動增 漁護署加強巡視西貢橋咀洲" [ref=e460] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E4%BA%94-%E9%BB%83%E9%87%91%E5%91%A8%E5%81%87%E6%9C%9F%E6%96%99%E6%B5%B7%E4%B8%8A%E6%B4%BB%E5%8B%95%E5%A2%9E-%E6%BC%81%E8%AD%B7%E7%BD%B2%E5%8A%A0%E5%BC%B7%E5%B7%A1%E8%A6%96%E8%A5%BF%E8%B2%A2%E6%A9%8B%E5%92%80%E6%B4%B2-200000039.html
+                      - paragraph [ref=e461]: 五一黃金周將至，近年內地旅客轉為深度遊，訪港行程涵蓋上山下海等活動。惟去年疑有浮潛遊客下水時誤踩珊瑚事件。漁護署於黃金周期間，將加強海岸生態旅遊熱點橋咀洲的巡查及宣傳教育工作，推廣海洋保育信息。除加派人手外，署方亦引入如無人機等科技協助監察，在發現有相關狀況時，會調配人員跟進勸喻，以保障當地的生態環境。天氣轉暖，漁護署料5月起參與浮潛、獨木舟等海上活動的旅客將增加。為應對五一黃金周遊客數量增加，署方昨公布已提前部署，當中於橋咀洲設立多項措施，包括假期期間將增派11名人員每日沿海岸線，包括沙灘、連島沙洲及熱門上落水位置巡邏，提醒訪客不應打擾、餵飼或採集海洋生物，勸止破壞生態行為。
+                      - generic [ref=e462]: am730・2 天前
+                - listitem [ref=e463]:
+                  - generic [ref=e464]:
+                    - img "泰國前總理戴克辛獲准假釋 下月提早出獄" [ref=e467]
+                    - generic [ref=e468]:
+                      - heading "泰國前總理戴克辛獲准假釋 下月提早出獄" [level=3] [ref=e469]:
+                        - link "泰國前總理戴克辛獲准假釋 下月提早出獄" [ref=e470] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/%E6%B3%B0%E5%9C%8B%E5%89%8D%E7%B8%BD%E7%90%86%E6%88%B4%E5%85%8B%E8%BE%9B%E7%8D%B2%E5%87%86%E5%81%87%E9%87%8B-%E4%B8%8B%E6%9C%88%E6%8F%90%E6%97%A9%E5%87%BA%E7%8D%84-112004466.html
+                      - paragraph [ref=e471]: （法新社曼谷29日電） 泰國矯正署今天表示，入獄服刑的前總理戴克辛（Thaksin Shinawatra）獲得假釋，將於下個月提早出獄。矯正署在聲明中指出，戴克辛將於5月11日獲釋，且在假釋期滿前「須遵守所有規定」，包括配戴電子腳鐐。
+                      - generic [ref=e472]: 法新社・1 天前
+                - listitem [ref=e473]:
+                  - generic [ref=e479] [cursor=pointer]:
+                    - link "Image for Taboola Advertising Unit" [ref=e480]:
+                      - /url: https://visionaryecho.com/zh/articles/hong-kong-household-cleaning-service-prices-and-offers-guide
+                      - img "Image for Taboola Advertising Unit" [ref=e482]
+                    - 'link "香港家居清潔服務收費：2026價格指南 在香港，選擇合適的家居清潔服務既能節省時間，又能保證居住環境的整潔和健康。本文將為您詳細介紹家居清潔的最新價格，包括專業清潔和深層清潔服務的收費標準。此外，還會提供公寓清潔的收費信息和傢俬清潔公司的推薦，助您輕鬆預約最適合的服務。 Visionary Echo in Taboola advertising section · Sponsored: learn about this recommendation (opens dialog)" [ref=e484]':
+                      - /url: https://visionaryecho.com/zh/articles/hong-kong-household-cleaning-service-prices-and-offers-guide
+                      - generic [ref=e485]:
+                        - link "香港家居清潔服務收費：2026價格指南" [ref=e486]
+                        - generic [ref=e487]: 在香港，選擇合適的家居清潔服務既能節省時間，又能保證居住環境的整潔和健康。本文將為您詳細介紹家居清潔的最新價格，包括專業清潔和深層清潔服務的收費標準。此外，還會提供公寓清潔的收費信息和傢俬清潔公司的推薦，助您輕鬆預約最適合的服務。
+                        - generic [ref=e488]:
+                          - link "Visionary Echo in Taboola advertising section" [ref=e489]: Visionary Echo
+                          - generic [ref=e490]: ·
+                          - 'link "Sponsored: learn about this recommendation (opens dialog)" [ref=e492]':
+                            - /url: "https://popup.taboola.com/en/?template=colorbox&utm_source=yahoo-homepage-hongkong&utm_medium=referral&utm_content=stream-twhk-c-v2:taboola-twhk-stream-revamp-v2-tab1-23:"
+                            - text: Ad
+                - listitem [ref=e493]:
+                  - generic [ref=e494]:
+                    - img "陳豪比華利山別墅5.5萬租出 回報僅約2厘丨去年豪花16萬租住中半山復式豪宅" [ref=e497]
+                    - generic [ref=e498]:
+                      - heading "陳豪比華利山別墅5.5萬租出 回報僅約2厘丨去年豪花16萬租住中半山復式豪宅" [level=3] [ref=e499]:
+                        - link "陳豪比華利山別墅5.5萬租出 回報僅約2厘丨去年豪花16萬租住中半山復式豪宅" [ref=e500] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E9%99%B3%E8%B1%AA%E6%AF%94%E8%8F%AF%E5%88%A9%E5%B1%B1%E5%88%A5%E5%A2%855-5%E8%90%AC%E7%A7%9F%E5%87%BA-%E5%9B%9E%E5%A0%B1%E5%83%85%E7%B4%842%E5%8E%98%E4%B8%A8%E5%8E%BB%E5%B9%B4%E8%B1%AA%E8%8A%B116%E8%90%AC%E7%A7%9F%E4%BD%8F%E4%B8%AD%E5%8D%8A%E5%B1%B1%E5%BE%A9%E5%BC%8F%E8%B1%AA%E5%AE%85-033505058.html
+                      - paragraph [ref=e501]: 豪宅市場租務暢旺，不少名人趁勢將手上物業出租。視帝陳豪持有的大埔比華利山別墅洋房，剛以約5.5萬元租出，租金回報約2厘。更多消息：舒淇丈夫馮德倫炒樓失手 劈價2成沽63 Pokfulam一房 持貨6年賬蝕134萬台灣歌手陶喆香港當包租公 西環加多近山2房每月5萬租出 享2.5厘租金回報該洋房為大埔比華利山別墅湖景道雙號屋，實用面積2,461平方呎，屬於5房間隔，陳豪於2013年以3,360萬元購入，數年前月租約6萬元，是次換租客輕微調整至5.5萬元，呎租僅22元，回報僅約2厘。據悉陳豪購入上述洋房原用於自住，到2017年因大仔入讀國際學校，陳豪不惜棄住大屋，改以月租7萬元進駐淺水灣嘉麟閣；隨後他又以月租10萬搬入鴨脷洲南灣2,200呎複式戶；直到去年底舉家搬入中半山舊山頂道、月租高達16萬元的複式超級豪宅。比華利山別墅位於三門仔路23號，發展商為恒基兆業，於2002年7月開始落成，屋苑分為6期，提供535座洋房組成，實用面積為1,593至7,031平方呎。根據28Hse網站消息，屋苑近期平均成交呎租約24元，近3個月錄得8宗租務成交，平均租金回報率約2.9厘。屋苑現時共有29個單位放租
+                      - generic [ref=e502]: 28Hse.com・1 天前
+                - listitem [ref=e503]:
+                  - generic [ref=e504]:
+                    - img "RIMOWA Essential 及 Groove 系列推亮橙色與紫紅色兩款全新色調" [ref=e507]
+                    - generic [ref=e508]:
+                      - heading "RIMOWA Essential 及 Groove 系列推亮橙色與紫紅色兩款全新色調" [level=3] [ref=e509]:
+                        - link "RIMOWA Essential 及 Groove 系列推亮橙色與紫紅色兩款全新色調" [ref=e510] [cursor=pointer]:
+                          - /url: https://hk.news.yahoo.com/rimowa-essential-%E5%8F%8A-groove-%E7%B3%BB%E5%88%97%E6%8E%A8%E4%BA%AE%E6%A9%99%E8%89%B2%E8%88%87%E7%B4%AB%E7%B4%85%E8%89%B2%E5%85%A9%E6%AC%BE%E5%85%A8%E6%96%B0%E8%89%B2%E8%AA%BF-112300960.html
+                      - paragraph [ref=e511]: 在旅行風格愈來愈講求個人標記的年代，行李箱早已不只是收納工具，而是出發前就先替你說話的造型配件。RIMOWA 今次以 Essential 系列為基礎，加入橙色與洋紅色，讓經典旅行箱多了一層鮮明情緒，既俐落，也帶點玩味。 RIMOWA 是次的季節限定色調，靈感源自普普設計中那份無所畏懼的樂觀精神 。亮橙色（Orange） 散發出鮮明且充滿動感的視覺張力，精準捕捉了踏上未知旅途時，心中那份躍動的雀躍感。 相對之下，紫紅色（Magenta） 則展現了另一種面貌：它深邃而富有光澤，在優雅的基調中滲透出一絲不羈的好奇心。兩款新色交織成一場風格多元的視覺對話，讓原本功能性的行李配件，瞬間化身為展現個性的藝術單品。 在同步發布的宣傳企劃中，品牌特別邀得西班牙傳奇演員 Rossy de Palma 擔綱演出 。在充滿色彩張力的居家空間裡，她以從容不迫的氣質，將 Essential 系列行李箱與 Groove 皮革手袋完美融入藝術品與生活擺設之中。 Essential 系列採用高品質聚碳酸酯材質，從拉桿到滾輪系統均經過嚴密的單色配對，確保視覺上的渾然一體 。 實用設計...
+                      - generic [ref=e512]: men’s Reads・1 天前
+                - listitem [ref=e513]:
+                  - generic [ref=e514]:
+                    - img "誠哥基金會｜「組織碎化」治癌技術公司HistoSonics 登上《時代雜誌》十大醫療與生命科學榜" [ref=e517]
+                    - generic [ref=e518]:
+                      - heading "誠哥基金會｜「組織碎化」治癌技術公司HistoSonics 登上《時代雜誌》十大醫療與生命科學榜" [level=3] [ref=e519]:
+                        - link "誠哥基金會｜「組織碎化」治癌技術公司HistoSonics 登上《時代雜誌》十大醫療與生命科學榜" [ref=e520] [cursor=pointer]:
+                          - /url: https://hk.finance.yahoo.com/news/%E8%AA%A0%E5%93%A5%E5%9F%BA%E9%87%91%E6%9C%83-%E7%B5%84%E7%B9%94%E7%A2%8E%E5%8C%96-%E6%B2%BB%E7%99%8C%E6%8A%80%E8%A1%93%E5%85%AC%E5%8F%B8histosonics-%E7%99%BB%E4%B8%8A-%E6%99%82%E4%BB%A3%E9%9B%9C%E8%AA%8C-054500282.html
+                      - paragraph [ref=e521]: 時代雜誌選出2026年「十大醫療與生命科學」企業，李嘉誠基金會支持的治癌組織碎化技術（Histotripsy）...
+                      - generic [ref=e522]: BossMind・1 天前
+                - listitem [ref=e523]
+          - complementary [ref=e531]:
+            - generic [ref=e532]:
+              - generic [ref=e533]:
+                - heading "港股" [level=2] [ref=e534]
+                - generic [ref=e535]:
+                  - generic [ref=e536]:
+                    - generic [ref=e537]: 恒生指數
+                    - generic [ref=e538]: 25,776.53
+                    - generic [ref=e540]:
+                      - generic [ref=e541]: "335.31"
+                      - generic [ref=e543]: (1.28%)
+                  - img "Yahoo 財經" [ref=e546]
+              - generic [ref=e547]: 已收市
+              - link "看完整指數" [ref=e548] [cursor=pointer]:
+                - /url: https://hk.finance.yahoo.com/quote/%5EHSI/
+                - generic [ref=e549]: 看完整指數
+                - img [ref=e550]
+            - generic [ref=e553]:
+              - generic [ref=e554]:
+                - heading "中西區天氣" [level=2] [ref=e555]
+                - generic [ref=e558]:
+                  - img [ref=e559]
+                  - combobox "天氣地區" [ref=e561] [cursor=pointer]:
+                    - option "中西區" [selected]
+                    - option "東區"
+                    - option "南區"
+                    - option "灣仔區"
+                    - option "九龍城"
+                    - option "觀塘區"
+                    - option "深水埗"
+                    - option "黃大仙"
+                    - option "油尖旺"
+                    - option "離島區"
+                    - option "葵青區"
+                    - option "北區"
+                    - option "西貢區"
+                    - option "沙田區"
+                    - option "大埔區"
+                    - option "荃灣區"
+                    - option "屯門區"
+                    - option "元朗區"
+                - generic [ref=e562]:
+                  - generic [ref=e564]:
+                    - generic [ref=e565] [cursor=pointer]:
+                      - text: 溫度
+                      - img [ref=e566]
+                    - generic [ref=e568] [cursor=pointer]: 降雨
+                    - generic [ref=e570]:
+                      - generic [ref=e571]:
+                        - generic [ref=e572]: 現在
+                        - img "晴" [ref=e574]
+                        - generic [ref=e575]: 25°
+                      - generic [ref=e576]:
+                        - generic [ref=e577]: 20時
+                        - img "晴" [ref=e579]
+                        - generic [ref=e580]: 25°
+                      - generic [ref=e581]:
+                        - generic [ref=e582]: 21時
+                        - img "晴" [ref=e584]
+                        - generic [ref=e585]: 25°
+                      - generic [ref=e586]:
+                        - generic [ref=e587]: 22時
+                        - img "晴" [ref=e589]
+                        - generic [ref=e590]: 24°
+                      - generic [ref=e591]:
+                        - generic [ref=e592]: 23時
+                        - img "晴" [ref=e594]
+                        - generic [ref=e595]: 24°
+                  - generic [ref=e596]: Powered by AccuWeather
+              - link "看完整天氣" [ref=e597] [cursor=pointer]:
+                - /url: https://hk.news.yahoo.com/weather/香港/中西區/中西區-24703128
+                - generic [ref=e598]: 看完整天氣
+                - img [ref=e599]
+            - iframe [ref=e604]:
+              - link [ref=f13e4] [cursor=pointer]:
+                - /url: https://adclick.g.doubleclick.net/pcs/click?xai=AKAOjsv3XNLz1OPdZ7RQzHCZVfT6m-EiYX6PIy-KZJ7rk_m9RO7677AnXSlqaR8S1ipMgaCJkP-lzGk4OH8PP7s0G0r16vsLkIoFhv3iJlA4ING-oUFzXzGemPLXDBv4xThJVynheTiC3KP9kAoIZh4JSWSbpCHyiAYfdOg_S_SkmY1DDzz5spqFaRS5wrjV5m0wSAOj4as1j-NLgYBBfj-pOxLGyj3irwM44TapPNgzMFUckrivhXnNzATpMsFxIsxD6-mEpghYpl9YqCEbmbM7yCKXi8m0u_MN26vLUYgAKldv-mMOlCOufrVaFdFcw8oxKMvsmsmZwmKkj2Y7kXqnMLKKdNRWt-qS1miNghF4Ku2Lt8SjY-3WBSZWmSRqgEyeqgn3asXU-Kb6Wp4gdTNTX1EZ0DjpMJRAtGArrwzU7gPPTTeqKWchoF2NeIsXv7R4pjQ&sai=AMfl-YRDw3aQ6Lhs5BBMjAEeXgwvMM_AOmkqVulvNkZVUfAnJoA1Qn8ejlC6mF6unlSml6dNVj6cjwBrwqVGdwcQkzbOrmW66LZYdte5cCDXYPZNP_Ykq6ua8kTDbJtmsS-liC748KQZEZHMMLPdpFm-3obtZeoei9HH21eGdU4prHw81NLK9oa_ntmrvbtexxTd_AUW-CBtb16Oi8V1Ox5Ge5KauN3WSrXR1dFcL6JZh0aQqQdMMPmV5U2tLHC_l6A5wTVz1EkujWvWzXFiABsQZLL6aYVcTYz_c5XE7f-m6rWujZBUO81Qyu3-nwfdcxqQAVE_dZsj&sig=Cg0ArKJSzDFtWGY7k4NwEAE&fbs_aeid=%5Bgw_fbsaeid%5D&urlfix=1&adurl=http://bit.ly/3LGNzrB
+                - img [ref=f13e5]
+            - generic [ref=e605]:
+              - generic [ref=e606]:
+                - heading "Yahoo TV" [level=2] [ref=e607]
+                - generic [ref=e608]:
+                  - iframe [ref=e612]:
+                    - region "視訊播放器" [ref=f18e4]:
+                      - generic "電子煙「牛肉乾」｜控煙酒辦：公眾地方吸食或管有罰3000元 不會警告即時票控" [ref=f18e5]
+                      - generic:
+                        - generic: 電子煙「牛肉乾」｜控煙酒辦：公眾地方吸食或管有罰3000元 不會警告即時票控
+                        - generic: "【Now新聞台】即日起，任何人士不得在公眾地方管有及吸食電子煙或加熱煙，違者會被票控三千元。控煙酒辦早上在金鐘執法，發出兩張定額罰款通知書。 記者：「小姐你好，知不知道今天有控煙新例？」 她在我們提醒下藏起，不過他又沒這麼幸運，新法例生效首日，就因為吸食加熱煙當場被逮，被控煙酒辦人員票控。 新例下，任何人士不得在公眾地方管有另類吸煙產品，包括電子煙煙彈、煙油、加熱煙支及草本煙，違者會被定額罰款三千元，若超過5個煙彈、100支加熱煙支等，最高更可被判罰款五萬元及監禁六個月。 林先生：「有吸食電子煙的，可能(措施)會打擊他們吸煙意欲，但對我吸食傳統煙的沒有甚麼影響。你不應該罰管有那些人，應該罰買賣那些人。在家中吸食沒有人知，警察上門就沒有辦法，正常情況下不會知道他管有。」 記者：「朋友說不會帶出門？」 林先生：「他們說吸食完持有的就棄置。」 黃先生：「有吸食的(朋友)可能會不吸食。」 記者：「多不多？」 黃先生：「都多，因為怕罰錢。3000元香港人而言中位數，不算多，不算少。」 控煙酒辦早上在金鐘一帶天橋巡查及宣傳新法例。 衞生署控煙酒辦公室主任林民聰：「如果發現有人攜帶，這些另類吸煙產品會即時票控，不會有警告。執法時如可以拆開，我們檢取煙支及煙油，但若果是一體式的煙機，是拆不開的，我們會一併檢取。有時也會視乎情況，有需要的話亦可能會檢取煙機作證物或進一步化驗。」 別以為在室內吸食就無問題，控煙酒辦指大廈內共用的地方，例如後樓梯、大堂及走廊等都屬於公眾地方，同樣會執法。 控煙酒辦又稱，若在禁煙區吸食電子煙，是同時違反兩項法例，會被票控各3000元，合共定額罰款6000元。 #要聞"
+                      - button "播放影片" [ref=f18e6] [cursor=pointer]:
+                        - text: 
+                        - generic [ref=f18e7]: 播放影片
+                      - text:            
+                  - generic [ref=e613]:
+                    - link "tv-channel-avatar 電子煙「牛肉乾」｜控煙酒辦：公眾地方吸食或管有罰3000元 不會警告即時票控" [ref=e615] [cursor=pointer]:
+                      - /url: https://hk.tv.yahoo.com/ytv-hk-hero-player-1/%E9%9B%BB%E5%AD%90%E7%85%99-%E7%89%9B%E8%82%89%E4%B9%BE-%E6%8E%A7%E7%85%99%E9%85%92%E8%BE%A6-%E5%85%AC%E7%9C%BE%E5%9C%B0%E6%96%B9%E5%90%B8%E9%A3%9F%E6%88%96%E7%AE%A1%E6%9C%89%E7%BD%B03000%E5%85%83-%E4%B8%8D%E6%9C%83%E8%AD%A6%E5%91%8A%E5%8D%B3%E6%99%82%E7%A5%A8%E6%8E%A7-100432754.html
+                      - img "tv-channel-avatar" [ref=e616]
+                      - generic [ref=e617]: 電子煙「牛肉乾」｜控煙酒辦：公眾地方吸食或管有罰3000元 不會警告即時票控
+                    - button "開啟自動播放設定" [ref=e619]:
+                      - img [ref=e620] [cursor=pointer]
+              - link "更多節目" [ref=e622] [cursor=pointer]:
+                - /url: https://hk.tv.yahoo.com/
+                - generic [ref=e623]: 更多節目
+                - img [ref=e624]
+            - iframe [ref=e631]:
+              - generic [ref=f15e1]:
+                - link [ref=f15e2] [cursor=pointer]:
+                  - /url: https://googleads.g.doubleclick.net/pcs/click?xai=AKAOjsuWcX7cmjY8Qmc2DyWjcR3lHD3TRcgBkFTGh0ZCvmzwY0u0W8lbAjb4APCdvPKOWQpNg0E6hGz7ll_pVpDexgJoDkY0boKhOS0oPVT4rhRm4TBUq2UF4-U2191ODFLy31FXDYhQcZ7L8Oj9hgUbBOjAZ3JxvB9NqxXf9JIw-zW3wJBt5CZXi_xv1QgyLChmeqkTu65bQBVkgaXIiX3B9yckbkzozmAzbOr6660YoUkyCHDBVsKxxEY-UkBoqhyhSCNssYnKadumVOv2mrJK5cbOzWQ_MJsG-H25KVZ6BbUtM7GWQl7-vrcFK6HRm-snXq3EapuIAWclWykevibXHfizZq7EUsI8gE5LL410HYX4npWBXDQjAnCP52KxAz-zyMOGT5zM_41RjOnmRiEk3UMsb5thbtVK9ZyWZV10xORMzKluj8tPrDaY2K2zJkFBzHs&sai=AMfl-YRlm6PeZ46px49DSvvVvZyxvEKFFuaQsNr0QLpK-i3UDhXgws9Ou8aq1iI32eGyRWVJYDfF9wNISkBvH_SHaygoHWdg2IzJE6lF4dEZssULFsIMIqpHxmMvgkoLl0tumtuqAQBzWIjbk84FR-rbJ-Wnz-Ewfk2EwSO-IUYJ0ImcUMQCQ20xYfdUkXTl-NObdL-cjJA1zB1yF4Oa6Oykpktu508uy2B0Od47J3gDJDsEM0726Bpm_pQ98heuXQd7RPkgv59CsuiF3uVEDN6AZwBDQHPVWHmdvCB74Y-1MTnrKVBqrh--_m0LFgT0DN_9Sj_UYS8d&sig=Cg0ArKJSzM6VR464jP-X&fbs_aeid=%5Bgw_fbsaeid%5D&adurl=https://hk.finance.yahoo.com/topic/%25E9%2587%2591%25E5%2583%25B9%25E8%25B5%25B0%25E5%258B%25A2/
+                - img [ref=f15e6] [cursor=pointer]
+                - button [ref=f15e8] [cursor=pointer]:
+                  - img [ref=f15e9]
+            - generic [ref=e632]:
+              - generic [ref=e633]:
+                - heading "NBA" [level=2] [ref=e634]
+                - generic [ref=e635]:
+                  - generic [ref=e636]:
+                    - img "teamLogo" [ref=e637]
+                    - generic [ref=e638]: 鷹隊
+                  - generic [ref=e639]: "-"
+                - generic [ref=e640]:
+                  - generic [ref=e641]:
+                    - img "teamLogo" [ref=e642]
+                    - generic [ref=e643]: 紐約人
+                  - generic [ref=e644]: "-"
+              - generic [ref=e646]: 5/1 07:00 尚未開賽
+              - link "看完整賽事" [ref=e647] [cursor=pointer]:
+                - /url: https://hk.sports.yahoo.com/nba/new-york-knicks-atlanta-hawks-2026043001/
+                - generic [ref=e648]: 看完整賽事
+                - img [ref=e649]
+            - iframe [ref=e678]:
+              - generic [ref=f16e1]:
+                - link [ref=f16e2] [cursor=pointer]:
+                  - /url: https://googleads.g.doubleclick.net/pcs/click?xai=AKAOjstmqckr9kugS3BpziSNmVTyLfVT4EVLk_xFbzKuVuXr3RPEkTECiLeGRS0MjJ4d7X5jAltONVAswyNI_ALZ0z_NuQLz2Y1vj5NSrBx-pEcNzd49h32TndFIw1lFIabYk6-wxcfgZZKfmn16vDsNGWTtsqhOdubjUAbZNOwunqKOy3keMny3jQ-22otYMnZrM5tGcBYzcHMkAK9_Bnha8xIUs7t5v_9QWebi1HtKf1LYA2z8R0Ey3GRnxmQgtXr91rgU0qbFVx1UJ4sYHuhixQ1oBNEFSTXLdtbZJnfxeiBxX8YwiqcF8CA_kFweaWuFYvOh3HLQwVLaVConB-jgDhC-81uC4nDXVciN-0NcxNCsrIJU8Cn_SylpwifNP6y6OeEjLbrhUD4MIWL9iROFRHGL3ghMB6nmGGnwPGc_JoC0LutAQK1ZQjW4TugNKrsgtow&sai=AMfl-YR-MFX_MsOUVM0Vnbf3_5kZe4ici066AmBNvqtQ-gVvMkBN9oYNedY5wGPe6oHtAjfkoSLse8ochx5TwHkrUIQJS_HnCWxt7QYJUX1zm8ltyF9flcHCV60anF4Z9kngs7mP0cJJmk5c-pPBv31bDmtXJdyjnOjxrEOSv6N4lMNJbTgwNOXL2re_Lq5oZjq3qIJayGMLY_ZZVNjeRdVu9UOO4cNEs9A6B8tlnswlsowkfkjGHuAoconYIo_EXqTWlbtPRZTN119vBtz3J3BP3kPFIVU2kIWwF8Q84PibMG8vf2mEI_TlR13kWK3g8LceFpq1YGrl&sig=Cg0ArKJSzOiqYeRvwyfG&fbs_aeid=%5Bgw_fbsaeid%5D&adurl=https://hk.finance.yahoo.com/topic/%25E9%2587%2591%25E5%2583%25B9%25E8%25B5%25B0%25E5%258B%25A2/
+                - img [ref=f16e6] [cursor=pointer]
+                - button [ref=f16e8] [cursor=pointer]:
+                  - img [ref=f16e9]
+            - generic [ref=e679]:
+              - generic [ref=e680]:
+                - list [ref=e681]:
+                  - listitem [ref=e682]:
+                    - link "前往Facebook官方帳號" [ref=e683] [cursor=pointer]:
+                      - /url: https://www.facebook.com/YahooHongKongNews
+                      - img [ref=e685]
+                  - listitem [ref=e688]:
+                    - link "前往IG粉絲團" [ref=e689] [cursor=pointer]:
+                      - /url: https://www.instagram.com/yahooentertainment.hk
+                      - img [ref=e691]
+                  - listitem [ref=e694]:
+                    - link "前往YouTube頻道" [ref=e695] [cursor=pointer]:
+                      - /url: https://www.youtube.com/@yahoo.hongkong
+                      - img [ref=e697]
+                - list [ref=e700]:
+                  - listitem [ref=e701]:
+                    - generic [ref=e702]:
+                      - link "服務條款" [ref=e703] [cursor=pointer]:
+                        - /url: https://guce.yahoo.com/terms?locale=zh-Hant-HK
+                      - text: 和
+                      - link "私隱政策" [ref=e704] [cursor=pointer]:
+                        - /url: https://guce.yahoo.com/privacy-policy?locale=zh-Hant-HK
+                  - listitem [ref=e705]:
+                    - link "私隱資訊主頁" [ref=e706] [cursor=pointer]:
+                      - /url: https://guce.yahoo.com/privacy-dashboard?locale=zh-Hant-HK
+                  - listitem [ref=e707]:
+                    - link "廣告服務" [ref=e708] [cursor=pointer]:
+                      - /url: https://yahooblog.yadvertising.com.hk/en/
+                  - listitem [ref=e709]:
+                    - link "搜尋推廣服務" [ref=e710] [cursor=pointer]:
+                      - /url: https://yahoo.yadvertising.com.hk/
+                  - listitem [ref=e711]:
+                    - link "服務中心" [ref=e712] [cursor=pointer]:
+                      - /url: https://hk.help.yahoo.com/kb/account
+                  - listitem [ref=e713]:
+                    - link "求職" [ref=e714] [cursor=pointer]:
+                      - /url: https://www.yahooinc.com/careers/
+                  - listitem [ref=e715]: © 2026 Yahoo. All rights reserved.
+              - button "回最上方" [ref=e717] [cursor=pointer]:
+                - img [ref=e718]
+  - alert [ref=e720]

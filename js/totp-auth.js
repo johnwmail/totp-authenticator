@@ -594,6 +594,7 @@
             });
             $('#importFile').addEventListener('change', importAccounts);
             $('#resetBtn').addEventListener('click', resetAccounts);
+            $('#reloadBtn').addEventListener('click', hardReloadApp);
             $('#addBtn').addEventListener('click', () => {
                 $('#keySecret').value = generateRandomSecret();
                 $('#addModal').classList.add('open');
@@ -1093,12 +1094,22 @@
             $('#editBtn').classList.toggle('active', editing);
             $('#themeBtn').classList.toggle('hidden', !editing);
             $('#resetBtn').classList.toggle('hidden', !editing);
+            $('#reloadBtn').classList.toggle('hidden', !editing);
             $('#importBtn').classList.toggle('hidden', !editing);
             $('#exportBtn').classList.toggle('hidden', !editing);
             $('#shareBtn').classList.toggle('hidden', !editing);
             $('#addRow').style.display = editing ? '' : 'none';
             updateLockIcon();
             render();
+        };
+
+        const hardReloadApp = function () {
+            caches.keys().then(function (names) {
+                names.forEach(function (name) {
+                    caches.delete(name);
+                });
+            });
+            location.reload(true);
         };
 
         const buildOtpauth = function (acc) {
@@ -1230,6 +1241,7 @@
             editing = false;
             $('#editBtn').classList.remove('active');
             $('#resetBtn').classList.add('hidden');
+            $('#reloadBtn').classList.add('hidden');
             $('#exportBtn').classList.add('hidden');
             $('#addRow').style.display = 'none';
             updateLockIcon();
