@@ -749,4 +749,53 @@ test.describe('Mobile Layout', () => {
 
         await expect(page.locator('.toast')).toContainText(/import/i);
     });
+
+    test('merge accounts with duplicate secrets preserves all accounts', async ({ page }) => {
+        // First, add two accounts with the same secret but different issuers/names
+        await page.locator('#editBtn').click();
+        await page.locator('#addBtn').click();
+        await page.locator('#keyIssuer').fill('Google');
+        await page.locator('#keyAccount').fill('google@example.com');
+        await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP');
+        await page.locator('#addKeyButton').click();
+
+        await page.locator('#addBtn').click();
+        await page.locator('#keyIssuer').fill('GitHub');
+        await page.locator('#keyAccount').fill('github@example.com');
+        await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP'); // Same secret!
+        await page.locator('#addKeyButton').click();
+
+        // Verify both accounts exist
+        await expect(page.locator('.account-card')).toHaveCount(2);
+
+        // Generate share URL
+        await page.locator('#shareBtn').click();
+        await page.locator('#sharePwInput').fill('sharepassword');
+        await page.locator('#shareGenerate').click();
+        const shareUrl = await page.locator('#shareUrlOutput').inputValue();
+        expect(shareUrl).toContain('#data=');
+
+        // Close modal and clear localStorage to simulate fresh import
+        await page.locator('#shareCancel').click();
+        await page.evaluate(() => localStorage.clear());
+        await page.reload();
+
+        // Import the share URL
+        await page.goto(shareUrl);
+        await expect(page.locator('#passwordModal')).toHaveClass(/open/);
+        await page.locator('#pwInput').fill('sharepassword');
+        await page.locator('#pwSubmit').click();
+        await page.waitForTimeout(500);
+
+        // Both accounts should be imported (not just one)
+        const count = await page.locator('.account-card').count();
+        expect(count).toBe(2);
+
+        // Verify both Google and GitHub accounts are present
+        const cardTexts = await page.locator('.account-name').allTextContents();
+        const googleFound = cardTexts.some(t => t.includes('Google'));
+        const githubFound = cardTexts.some(t => t.includes('GitHub'));
+        expect(googleFound).toBe(true);
+        expect(githubFound).toBe(true);
+    });
 });

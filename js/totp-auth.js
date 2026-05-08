@@ -766,14 +766,16 @@
         };
 
         const mergeAccounts = function (existing, incoming) {
-            const secretMap = new Map();
+            // Use composite key (issuer + name + secret) to preserve duplicate secrets
+            const accountMap = new Map();
+            const getKey = (acc) => `${acc.issuer || ''}|${acc.name || ''}|${acc.secret}`;
             for (const acc of existing) {
-                secretMap.set(acc.secret, acc);
+                accountMap.set(getKey(acc), acc);
             }
             for (const acc of incoming) {
-                secretMap.set(acc.secret, acc);
+                accountMap.set(getKey(acc), acc);
             }
-            return Array.from(secretMap.values());
+            return Array.from(accountMap.values());
         };
 
         const openShareModal = function () {
