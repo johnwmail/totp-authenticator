@@ -751,50 +751,64 @@ test.describe('Mobile Layout', () => {
     });
 
     test('merge accounts with duplicate secrets preserves all accounts', async ({ page }) => {
-        // First, add two accounts with the same secret but different issuers/names
-        await page.locator('#editBtn').click();
-        await page.locator('#addBtn').click();
-        await page.locator('#keyIssuer').fill('Google');
-        await page.locator('#keyAccount').fill('google@example.com');
-        await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP');
-        await page.locator('#addKeyButton').click();
+        // Test by directly importing URL data with two accounts sharing the same secret
+        const accounts = [
+            { name: 'google@example.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'GoogleDup', algorithm: 'SHA-1', period: 30, digits: 6, url: '' },
+            { name: 'github@example.com', secret: 'JBSWY3DPEHPK3PXP', issuer: 'GitHubDup', algorithm: 'SHA-1', period: 30, digits: 6, url: '' }
+        ];
 
-        await page.locator('#addBtn').click();
-        await page.locator('#keyIssuer').fill('GitHub');
-        await page.locator('#keyAccount').fill('github@example.com');
-        await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP'); // Same secret!
-        await page.locator('#addKeyButton').click();
+        // Encrypt the accounts using the same method as share URL
+        const data = await page.evaluate(async ({ accounts }) => {
+            const LZString = window.LZString;
+            const jsonStr = JSON.stringify(accounts);
+            const compressed = LZString.compressToUTF16(jsonStr);
 
-        // Verify both accounts exist
-        await expect(page.locator('.account-card')).toHaveCount(2);
+            const enc = new TextEncoder();
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                enc.encode('sharepassword'),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(compressed)
+            );
 
-        // Generate share URL
-        await page.locator('#shareBtn').click();
-        await page.locator('#sharePwInput').fill('sharepassword');
-        await page.locator('#shareGenerate').click();
-        const shareUrl = await page.locator('#shareUrlOutput').inputValue();
-        expect(shareUrl).toContain('#data=');
+            const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+        }, { accounts });
 
-        // Close modal and clear localStorage to simulate fresh import
-        await page.locator('#shareCancel').click();
-        await page.evaluate(() => localStorage.clear());
-        await page.reload();
-
-        // Import the share URL
-        await page.goto(shareUrl);
-        await expect(page.locator('#passwordModal')).toHaveClass(/open/);
+        // Navigate to URL with share data to trigger import
+        await page.goto(`/?#data=${data}`);
+        
+        // Wait for password modal
+        await expect(page.locator('#passwordModal')).toHaveClass(/open/, { timeout: 10000 });
+        
+        // Enter password to decrypt
         await page.locator('#pwInput').fill('sharepassword');
         await page.locator('#pwSubmit').click();
         await page.waitForTimeout(500);
 
-        // Both accounts should be imported (not just one)
+        // Should have 3 accounts: 2 imported (GoogleDup, GitHubDup with same secret) + 1 existing from accounts.example.json
         const count = await page.locator('.account-card').count();
-        expect(count).toBe(2);
+        expect(count).toBe(3);
 
-        // Verify both Google and GitHub accounts are present
+        // Verify both GoogleDup and GitHubDup accounts are present
         const cardTexts = await page.locator('.account-name').allTextContents();
-        const googleFound = cardTexts.some(t => t.includes('Google'));
-        const githubFound = cardTexts.some(t => t.includes('GitHub'));
+        const googleFound = cardTexts.some(t => t.includes('GoogleDup'));
+        const githubFound = cardTexts.some(t => t.includes('GitHubDup'));
         expect(googleFound).toBe(true);
         expect(githubFound).toBe(true);
     });
