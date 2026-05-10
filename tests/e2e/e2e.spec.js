@@ -332,9 +332,9 @@ test.describe('TOTP Authenticator E2E', () => {
             await updatePwBtn.click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-            await page.locator('#setPwInput').clear();
+            await page.locator('#setPwInput').click({ clickCount: 3 });
             await page.locator('#setPwInput').fill('testpassword123');
-            await page.locator('#setPwConfirm').clear();
+            await page.locator('#setPwConfirm').click({ clickCount: 3 });
             await page.locator('#setPwConfirm').fill('testpassword123');
             await page.locator('#setPwSubmit').click();
             // Wait for modal to close (async setPassword + key derivation may be slow on mobile)
@@ -364,9 +364,9 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(updatePwBtn).toBeVisible();
             await updatePwBtn.click();
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-            await page.locator('#setPwInput').clear();
+            await page.locator('#setPwInput').click({ clickCount: 3 });
             await page.locator('#setPwInput').fill('testpassword123');
-            await page.locator('#setPwConfirm').clear();
+            await page.locator('#setPwConfirm').click({ clickCount: 3 });
             await page.locator('#setPwConfirm').fill('testpassword123');
             await page.locator('#setPwSubmit').click();
             await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
@@ -397,9 +397,9 @@ test.describe('TOTP Authenticator E2E', () => {
             await updatePwBtn.click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-            await page.locator('#setPwInput').clear();
+            await page.locator('#setPwInput').click({ clickCount: 3 });
             await page.locator('#setPwInput').fill('oldpassword');
-            await page.locator('#setPwConfirm').clear();
+            await page.locator('#setPwConfirm').click({ clickCount: 3 });
             await page.locator('#setPwConfirm').fill('oldpassword');
             await page.locator('#setPwSubmit').click();
             await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
@@ -427,12 +427,10 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await expect(page.locator('#setPwTitle')).toContainText('Change Password');
 
-            // Step 5: Set new password
-            await page.evaluate(() => {
-                document.querySelector('#setPwInput').value = '';
-                document.querySelector('#setPwConfirm').value = '';
-            });
+            // Step 5: Set new password — select all via triple-click, then fill
+            await page.locator('#setPwInput').click({ clickCount: 3 });
             await page.locator('#setPwInput').fill('newpassword');
+            await page.locator('#setPwConfirm').click({ clickCount: 3 });
             await page.locator('#setPwConfirm').fill('newpassword');
             await page.locator('#setPwSubmit').click();
             await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
@@ -849,11 +847,9 @@ test.describe('Share URL', () => {
         await expect(updatePwBtn).toBeVisible();
         await updatePwBtn.click();
 
-        await page.evaluate(() => {
-            document.querySelector('#setPwInput').value = '';
-            document.querySelector('#setPwConfirm').value = '';
-        });
+        await page.locator('#setPwInput').click({ clickCount: 3 });
         await page.locator('#setPwInput').fill('vaultpassword');
+        await page.locator('#setPwConfirm').click({ clickCount: 3 });
         await page.locator('#setPwConfirm').fill('vaultpassword');
         await page.locator('#setPwSubmit').click();
         await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
