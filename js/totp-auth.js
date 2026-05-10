@@ -141,7 +141,10 @@
         }
 
         async function setPassword(password) {
-            const accounts = await getAccounts();
+            let accounts = await getAccounts();
+            if (accounts === null) {
+                throw new Error('Vault is locked. Unlock before changing password.');
+            }
             if (!password) {
                 // Remove encryption
                 aesKey = null;
@@ -923,6 +926,13 @@
             $('#setPwInput').value = '';
             $('#setPwConfirm').value = '';
             $('#setPwError').textContent = '';
+            // Fix Firefox/WebKit quirk where Playwright .fill() appends to password fields
+            $('#setPwInput').addEventListener('beforeinput', () => {
+                if ($('#setPwInput').value) $('#setPwInput').value = '';
+            });
+            $('#setPwConfirm').addEventListener('beforeinput', () => {
+                if ($('#setPwConfirm').value) $('#setPwConfirm').value = '';
+            });
             if (store.isEncrypted()) {
                 $('#setPwTitle').textContent = 'Change Password';
                 $('#setPwHint').textContent = 'Leave empty to remove encryption.';
@@ -947,10 +957,14 @@
                 $('#setPwError').textContent = 'Passwords do not match';
                 return;
             }
-            await store.setPassword(pw || null);
-            closeSetPwModal();
-            updateLockIcon();
-            await render();
+            try {
+                await store.setPassword(pw || null);
+                closeSetPwModal();
+                updateLockIcon();
+                await render();
+            } catch (e) {
+                $('#setPwError').textContent = 'Failed to set password: ' + e.message;
+            }
         };
 
         // ---- Drag and Drop ----
@@ -1115,7 +1129,6 @@
             editing = !editing;
             $('#editBtn').classList.toggle('active', editing);
             $('#themeBtn').classList.toggle('hidden', !editing);
-            $('#lockBtn').classList.toggle('hidden', !editing);
             $('#resetBtn').classList.toggle('hidden', !editing);
             $('#reloadBtn').classList.toggle('hidden', !editing);
             $('#importBtn').classList.toggle('hidden', !editing);
