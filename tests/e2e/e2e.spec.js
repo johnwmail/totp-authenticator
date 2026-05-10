@@ -332,11 +332,13 @@ test.describe('TOTP Authenticator E2E', () => {
             await updatePwBtn.click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            await page.locator('#setPwInput').clear();
             await page.locator('#setPwInput').fill('testpassword123');
+            await page.locator('#setPwConfirm').clear();
             await page.locator('#setPwConfirm').fill('testpassword123');
             await page.locator('#setPwSubmit').click();
             // Wait for modal to close (async setPassword + key derivation may be slow on mobile)
-            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 10000 });
+            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
 
             // Exit edit mode - lockBtn should now be visible (unlocked state shows 🔓)
             await page.locator('#editBtn').click();
@@ -362,10 +364,12 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(updatePwBtn).toBeVisible();
             await updatePwBtn.click();
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            await page.locator('#setPwInput').clear();
             await page.locator('#setPwInput').fill('testpassword123');
+            await page.locator('#setPwConfirm').clear();
             await page.locator('#setPwConfirm').fill('testpassword123');
             await page.locator('#setPwSubmit').click();
-            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/, { timeout: 15000 });
+            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
 
             // Exit edit mode - lockBtn should be visible
             await page.locator('#editBtn').click();
@@ -424,9 +428,11 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(page.locator('#setPwTitle')).toContainText('Change Password');
 
             // Step 5: Set new password
-            await page.locator('#setPwInput').clear();
+            await page.evaluate(() => {
+                document.querySelector('#setPwInput').value = '';
+                document.querySelector('#setPwConfirm').value = '';
+            });
             await page.locator('#setPwInput').fill('newpassword');
-            await page.locator('#setPwConfirm').clear();
             await page.locator('#setPwConfirm').fill('newpassword');
             await page.locator('#setPwSubmit').click();
             await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
@@ -843,11 +849,14 @@ test.describe('Share URL', () => {
         await expect(updatePwBtn).toBeVisible();
         await updatePwBtn.click();
 
+        await page.evaluate(() => {
+            document.querySelector('#setPwInput').value = '';
+            document.querySelector('#setPwConfirm').value = '';
+        });
         await page.locator('#setPwInput').fill('vaultpassword');
         await page.locator('#setPwConfirm').fill('vaultpassword');
         await page.locator('#setPwSubmit').click();
-        // Wait for modal to close with retry
-        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/, { timeout: 15000 });
+        await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
 
         // Exit edit mode to access lockBtn
         await page.locator('#editBtn').click();
