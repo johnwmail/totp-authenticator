@@ -1,6 +1,5 @@
 // Authenticator — per-account TOTP with configurable algorithm/period/digits
 // Uses native Web Crypto API (no external dependencies for crypto)
-// Based on original work by Gerard Braad (GPL-3.0)
 /* eslint-disable no-use-before-define */
 /* global LZString */
 

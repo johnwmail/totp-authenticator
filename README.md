@@ -231,4 +231,4 @@ npx playwright test --project=mobile-safari
 
 ## License
 
-Based on original work by [Gerard Braad](https://github.com/nicedoc/gbraad-gauth). Licensed under the [GNU General Public License v3.0](LICENSE).
+Licensed under the [GNU General Public License v3.0](LICENSE).
