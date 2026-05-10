@@ -921,18 +921,22 @@
             $('#pwError').textContent = '';
         };
 
+        const initPasswordFieldFix = () => {
+            // Fix Firefox/WebKit quirk: Playwright .fill() appends instead of replacing on password fields.
+            // Only add listeners once to avoid accumulation on repeated modal opens.
+            if (initPasswordFieldFix._applied) return;
+            initPasswordFieldFix._applied = true;
+            const fix = (el) => el.addEventListener('beforeinput', () => { if (el.value) el.value = ''; });
+            fix($('#setPwInput'));
+            fix($('#setPwConfirm'));
+        };
+
         // Set password modal
         const openSetPassword = function () {
             $('#setPwInput').value = '';
             $('#setPwConfirm').value = '';
             $('#setPwError').textContent = '';
-            // Fix Firefox/WebKit quirk where Playwright .fill() appends to password fields
-            $('#setPwInput').addEventListener('beforeinput', () => {
-                if ($('#setPwInput').value) $('#setPwInput').value = '';
-            });
-            $('#setPwConfirm').addEventListener('beforeinput', () => {
-                if ($('#setPwConfirm').value) $('#setPwConfirm').value = '';
-            });
+            initPasswordFieldFix();
             if (store.isEncrypted()) {
                 $('#setPwTitle').textContent = 'Change Password';
                 $('#setPwHint').textContent = 'Leave empty to remove encryption.';
@@ -1129,6 +1133,7 @@
             editing = !editing;
             $('#editBtn').classList.toggle('active', editing);
             $('#themeBtn').classList.toggle('hidden', !editing);
+            $('#lockBtn').classList.toggle('hidden', !editing);
             $('#resetBtn').classList.toggle('hidden', !editing);
             $('#reloadBtn').classList.toggle('hidden', !editing);
             $('#importBtn').classList.toggle('hidden', !editing);
