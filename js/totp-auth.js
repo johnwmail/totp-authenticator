@@ -623,6 +623,7 @@
                 openPasswordModal('unlock');
             });
             $('#lockBtn').addEventListener('click', onLockToggle);
+            $('#updatePwBtn').addEventListener('click', openSetPassword);
             $('#passwordModal').addEventListener('click', e => {
                 if (e.target === $('#passwordModal')) {
                     closePasswordModal();
@@ -869,19 +870,26 @@
         };
 
         const updateLockIcon = function () {
-            const btn = $('#lockBtn');
-            if (!btn) {
+            const lockBtn = $('#lockBtn');
+            const updatePwBtn = $('#updatePwBtn');
+            if (!lockBtn || !updatePwBtn) {
                 return;
             }
-            if (store.isEncrypted()) {
-                btn.textContent = store.isUnlocked() ? '🔓' : '🔒';
-                btn.title = store.isUnlocked() ? 'Lock accounts' : 'Unlock accounts';
-                btn.classList.remove('hidden');
-            } else {
-                btn.textContent = '🔐';
-                btn.title = 'Set encryption password';
-                btn.classList.toggle('hidden', !editing);
+            if (!editing) {
+                // Not in edit mode: show lock button if encrypted
+                updatePwBtn.classList.add('hidden');
+                if (store.isEncrypted()) {
+                    lockBtn.classList.remove('hidden');
+                    lockBtn.textContent = '🔓';
+                    lockBtn.title = 'Lock accounts';
+                } else {
+                    lockBtn.classList.add('hidden');
+                }
+                return;
             }
+            // In edit mode: show update password button, hide lock button
+            updatePwBtn.classList.remove('hidden');
+            lockBtn.classList.add('hidden');
         };
 
         // Unlock modal
@@ -1107,6 +1115,7 @@
             editing = !editing;
             $('#editBtn').classList.toggle('active', editing);
             $('#themeBtn').classList.toggle('hidden', !editing);
+            $('#lockBtn').classList.toggle('hidden', !editing);
             $('#resetBtn').classList.toggle('hidden', !editing);
             $('#reloadBtn').classList.toggle('hidden', !editing);
             $('#importBtn').classList.toggle('hidden', !editing);

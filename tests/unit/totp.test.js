@@ -269,6 +269,9 @@ async function runTests() {
 
     await runTickDedupRegressionTest();
 
+    // ---- Update password button visibility tests ----
+    await runUpdatePasswordButtonTests();
+
     // ---- Summary ----
     console.log(`\n=== Results: ${passed} passed, ${failed} failed ===\n`);
     process.exit(failed > 0 ? 1 : 0);
@@ -1091,6 +1094,234 @@ async function runShareUrlTests() {
     } finally {
         globalThis.Storage = originalStorage;
         globalThis.localStorage = originalLocalStorage;
+    }
+}
+
+// ---- Update password button visibility tests ----
+async function runUpdatePasswordButtonTests() {
+    console.log('Update password button visibility:');
+
+    const originalDocument = globalThis.document;
+    const originalStorage = globalThis.Storage;
+    const originalLocalStorage = globalThis.localStorage;
+    const originalFetch = globalThis.fetch;
+    const originalSetInterval = globalThis.setInterval;
+    const originalClearInterval = globalThis.clearInterval;
+
+    function makeClassList() {
+        const list = [];
+        return {
+            add(cls) { list.push(cls); },
+            remove(cls) { const i = list.indexOf(cls); if (i !== -1) list.splice(i, 1); },
+            toggle(cls, show) {
+                const i = list.indexOf(cls);
+                if (show) { if (i === -1) list.push(cls); }
+                else { if (i !== -1) list.splice(i, 1); }
+            },
+            contains(cls) { return list.indexOf(cls) !== -1; },
+            list() { return list.slice(); }
+        };
+    }
+
+    function makeNode(className) {
+        return {
+            className: className || '',
+            style: { display: '' },
+            classList: makeClassList(),
+            textContent: '',
+            title: '',
+            value: '',
+            _innerHTML: '',
+            children: [],
+            parentNode: null,
+            attributes: {},
+            addEventListener() {},
+            appendChild(child) { child.parentNode = this; this.children.push(child); },
+            set innerHTML(v) { this._innerHTML = v; this.children = []; },
+            get innerHTML() { return this._innerHTML; },
+            setAttribute(name, value) { this.attributes[name] = String(value); },
+            getAttribute(name) { return this.attributes[name] || null; },
+            closest(selector) {
+                var node = this;
+                while (node) {
+                    if (selector === '.account-card' && node.className === 'account-card') return node;
+                    node = node.parentNode;
+                }
+                return null;
+            },
+            focus() {},
+            select() {}
+        };
+    }
+
+    const accountsEl = makeNode('account-list');
+    const editBtn = makeNode();
+    let lockBtn = makeNode();
+    let updatePwBtn = makeNode();
+    const elements = {
+        '#accounts': accountsEl,
+        '#editBtn': editBtn,
+        '#exportBtn': makeNode(),
+        '#importBtn': makeNode(),
+        '#importFile': makeNode(),
+        '#resetBtn': makeNode(),
+        '#reloadBtn': makeNode(),
+        '#shareBtn': makeNode(),
+        '#addBtn': makeNode(),
+        '#regenSecret': makeNode(),
+        '#addKeyCancel': makeNode(),
+        '#addKeyButton': makeNode(),
+        '#addModal': makeNode(),
+        '#qrClose': makeNode(),
+        '#qrModal': makeNode(),
+        '#lockScreenUnlock': makeNode(),
+        '#lockBtn': lockBtn,
+        '#updatePwBtn': updatePwBtn,
+        '#passwordModal': makeNode(),
+        '#pwCancel': makeNode(),
+        '#pwSubmit': makeNode(),
+        '#pwInput': makeNode(),
+        '#setPwModal': makeNode(),
+        '#setPwCancel': makeNode(),
+        '#setPwSubmit': makeNode(),
+        '#themeBtn': makeNode(),
+        '#lockScreen': makeNode(),
+        '#addRow': makeNode(),
+        '#pwError': makeNode(),
+        '#pwTitle': makeNode(),
+        '#setPwInput': makeNode(),
+        '#setPwConfirm': makeNode(),
+        '#setPwError': makeNode(),
+        '#setPwTitle': makeNode(),
+        '#setPwHint': makeNode(),
+        '#keyIssuer': makeNode(),
+        '#keyAccount': makeNode(),
+        '#keySecret': makeNode(),
+        '#keyUrl': makeNode(),
+        '#keyAlgorithm': makeNode(),
+        '#keyPeriod': makeNode(),
+        '#keyDigits': makeNode(),
+        '#modalTitle': makeNode()
+    };
+    // Track click handler on editBtn so tests can trigger toggleEdit
+    editBtn.addEventListener = function(event, handler) { this._clickHandler = handler; };
+    lockBtn.addEventListener = function() {};
+    updatePwBtn.addEventListener = function() {};
+
+    elements['#accounts'].querySelectorAll = () => [];
+    elements['#accounts'].appendChild = function(node) { this.children.push(node); };
+
+    globalThis.document = {
+        documentElement: { setAttribute() {}, getAttribute() { return 'light'; } },
+        querySelector(sel) { return elements[sel] || makeNode(); },
+        querySelectorAll() { return []; },
+        createElement() {
+            var el = makeNode();
+            el.querySelector = function(selector) {
+                if (selector === '.totp-code' || selector === '.qr-btn' || selector === '.edit-btn' || selector === '.delete-btn') {
+                    return makeNode(selector.slice(1));
+                }
+                return makeNode();
+            };
+            return el;
+        }
+    };
+
+    const storeMap = new Map();
+    storeMap.set('accounts', JSON.stringify([{ name: 'a', secret: 'JBSWY3DPEHPK3PXP' }]));
+
+    globalThis.Storage = function() {};
+    globalThis.localStorage = {
+        getItem(k) { return storeMap.has(k) ? storeMap.get(k) : null; },
+        setItem(k, v) { storeMap.set(k, String(v)); },
+        removeItem(k) { storeMap.delete(k); },
+        clear() { storeMap.clear(); }
+    };
+
+    globalThis.fetch = async () => ({ ok: false, text: async () => '' });
+    globalThis.setInterval = () => 1;
+    globalThis.clearInterval = () => {};
+
+    // Helper: simulate unlock (set encryption + mark unlocked)
+    async function unlockStore() {
+        const store = new totpAuth.StorageService();
+        await store.setPassword('pw');
+        return store;
+    }
+
+    async function resetStore() {
+        const store = new totpAuth.StorageService();
+        store.resetAll();
+    }
+
+    try {
+        // Helper: call toggleEdit (via editBtn click) then return lockBtn/updatePwBtn refs
+        function clickEditAndGetButtons() {
+            elements['#editBtn']._clickHandler();
+            return { lockBtn: elements['#lockBtn'], updatePwBtn: elements['#updatePwBtn'] };
+        }
+
+        // -- Test 1: Not encrypted, not editing → both hidden --
+        await resetStore();
+        {
+            const ctrl = new totpAuth.KeysController();
+            await ctrl.init();
+            lockBtn = elements['#lockBtn'];
+            updatePwBtn = elements['#updatePwBtn'];
+        }
+        assert(lockBtn.classList.contains('hidden'), 'not encrypted + not editing → lockBtn hidden');
+        assert(updatePwBtn.classList.contains('hidden'), 'not encrypted + not editing → updatePwBtn hidden');
+
+        // -- Test 2: Not encrypted, editing → updatePwBtn shown, lockBtn hidden --
+        {
+            const ctrl = new totpAuth.KeysController();
+            await ctrl.init();
+            ({ lockBtn, updatePwBtn } = clickEditAndGetButtons());
+        }
+        assert(lockBtn.classList.contains('hidden'), 'not encrypted + editing → lockBtn hidden');
+        assert(!updatePwBtn.classList.contains('hidden'), 'not encrypted + editing → updatePwBtn visible');
+
+        // -- Test 3: Encrypted + unlocked, not editing → lockBtn shown (🔓), updatePwBtn hidden --
+        {
+            const ctrl = new totpAuth.KeysController();
+            await ctrl.init();
+            await unlockStore();
+            lockBtn = elements['#lockBtn'];
+            updatePwBtn = elements['#updatePwBtn'];
+        }
+        assert(!lockBtn.classList.contains('hidden'), 'encrypted + unlocked + not editing → lockBtn visible');
+        assert(updatePwBtn.classList.contains('hidden'), 'encrypted + unlocked + not editing → updatePwBtn hidden');
+
+        // -- Test 4: Encrypted + unlocked, editing → lockBtn hidden, updatePwBtn shown --
+        {
+            const ctrl = new totpAuth.KeysController();
+            await ctrl.init();
+            await unlockStore();
+            ({ lockBtn, updatePwBtn } = clickEditAndGetButtons());
+        }
+        assert(lockBtn.classList.contains('hidden'), 'encrypted + unlocked + editing → lockBtn hidden');
+        assert(!updatePwBtn.classList.contains('hidden'), 'encrypted + unlocked + editing → updatePwBtn visible');
+
+        // -- Test 5: Encrypted + locked → lockBtn shown, updatePwBtn hidden --
+        {
+            const ctrl = new totpAuth.KeysController();
+            await ctrl.init();
+            const store = await unlockStore();
+            store.lock();
+            lockBtn = elements['#lockBtn'];
+            updatePwBtn = elements['#updatePwBtn'];
+        }
+        assert(!lockBtn.classList.contains('hidden'), 'encrypted + locked → lockBtn visible');
+        assert(updatePwBtn.classList.contains('hidden'), 'encrypted + locked → updatePwBtn hidden');
+
+
+    } finally {
+        globalThis.document = originalDocument;
+        globalThis.Storage = originalStorage;
+        globalThis.localStorage = originalLocalStorage;
+        globalThis.fetch = originalFetch;
+        globalThis.setInterval = originalSetInterval;
+        globalThis.clearInterval = originalClearInterval;
     }
 }
 

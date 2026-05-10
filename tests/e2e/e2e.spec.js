@@ -3,13 +3,29 @@ const path = require('path');
 
 test.describe('TOTP Authenticator E2E', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        // Clear localStorage for test isolation (after page loads so evaluate works on WebKit)
+        await page.evaluate(() => {
+            localStorage.clear();
+        });
+        // Unregister SW and clear caches (best-effort; may be restricted in some browsers)
+        try {
+            await page.evaluate(async () => {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                }
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(n => caches.delete(n)));
+                }
+            });
+        } catch {
+            // SW/Cache APIs may be restricted in some browser contexts (e.g. WebKit over HTTP)
+        }
+        // Reload to apply cleared state
+        await page.reload({ waitUntil: 'domcontentloaded' });
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
-        // Clear localStorage to reset state between tests
-        await page.evaluate(() => localStorage.clear());
-        await page.reload();
-        await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
-        // Wait for accounts.json to fully load
         await expect(async () => {
             const count = await page.locator('.account-card').count();
             expect(count).toBeGreaterThan(0);
@@ -308,46 +324,131 @@ test.describe('TOTP Authenticator E2E', () => {
 
     test.describe('Encryption', () => {
         test('set encryption password and lock/unlock', async ({ page }) => {
+            // Enter edit mode to access updatePwBtn
             await page.locator('#editBtn').click();
 
+            const updatePwBtn = page.locator('#updatePwBtn');
+            await expect(updatePwBtn).toBeVisible();
+            await updatePwBtn.click();
+
+            await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            await page.locator('#setPwInput').fill('testpassword123');
+            await page.locator('#setPwConfirm').fill('testpassword123');
+            await page.locator('#setPwSubmit').click();
+            // Wait for modal to close (async setPassword + key derivation may be slow on mobile)
+            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 10000 });
+
+            // Exit edit mode - lockBtn should now be visible (unlocked state shows 🔓)
+            await page.locator('#editBtn').click();
             const lockBtn = page.locator('#lockBtn');
-            if (await lockBtn.isVisible()) {
-                await lockBtn.click();
+            await expect(lockBtn).toBeVisible();
 
-                await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            // Lock the vault
+            await lockBtn.click();
+            await expect(page.locator('#lockScreen')).toBeVisible();
 
-                await page.locator('#setPwInput').fill('testpassword123');
-                await page.locator('#setPwConfirm').fill('testpassword123');
-                await page.locator('#setPwSubmit').click();
-
-                await expect(page.locator('#lockScreen')).not.toBeVisible();
-            }
+            // Unlock with password
+            await page.locator('#lockScreenUnlock').click();
+            await page.locator('#pwInput').fill('testpassword123');
+            await page.locator('#pwSubmit').click();
+            await expect(page.locator('#lockScreen')).not.toBeVisible();
+            await expect(page.locator('.account-card').first()).toBeVisible();
         });
 
         test('unlock vault shows accounts', async ({ page }) => {
+            // First, enter edit mode and set password via updatePwBtn
             await page.locator('#editBtn').click();
+            const updatePwBtn = page.locator('#updatePwBtn');
+            await expect(updatePwBtn).toBeVisible();
+            await updatePwBtn.click();
+            await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            await page.locator('#setPwInput').fill('testpassword123');
+            await page.locator('#setPwConfirm').fill('testpassword123');
+            await page.locator('#setPwSubmit').click();
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/, { timeout: 15000 });
 
+            // Exit edit mode - lockBtn should be visible
+            await page.locator('#editBtn').click();
             const lockBtn = page.locator('#lockBtn');
-            if (await lockBtn.isVisible()) {
-                await lockBtn.click();
+            await expect(lockBtn).toBeVisible();
 
-                await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-
-                await page.locator('#setPwInput').fill('testpassword123');
-                await page.locator('#setPwConfirm').fill('testpassword123');
-                await page.locator('#setPwSubmit').click();
-
-                await expect(page.locator('#lockScreen')).not.toBeVisible();
-            }
-
+            // Lock the vault
             await lockBtn.click();
-
             await expect(page.locator('#lockScreen')).toBeVisible();
 
+            // Unlock with password
             await page.locator('#lockScreenUnlock').click();
             await page.locator('#pwInput').fill('testpassword123');
             await page.locator('#pwSubmit').click();
 
+            await expect(page.locator('#lockScreen')).not.toBeVisible();
+            await expect(page.locator('.account-card').first()).toBeVisible();
+        });
+
+        test('update password flow: old password locks vault, new password unlocks', async ({ page }) => {
+            // Step 1: Set initial password via updatePwBtn in edit mode
+            await page.locator('#editBtn').click();
+            const updatePwBtn = page.locator('#updatePwBtn');
+            await expect(updatePwBtn).toBeVisible();
+            await updatePwBtn.click();
+
+            await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            await page.locator('#setPwInput').clear();
+            await page.locator('#setPwInput').fill('oldpassword');
+            await page.locator('#setPwConfirm').clear();
+            await page.locator('#setPwConfirm').fill('oldpassword');
+            await page.locator('#setPwSubmit').click();
+            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
+
+            // Exit edit mode to access lockBtn
+            await page.locator('#editBtn').click();
+            const lockBtn = page.locator('#lockBtn');
+            await expect(lockBtn).toBeVisible();
+
+            // Step 2: Lock the vault with old password
+            await lockBtn.click();
+            await expect(page.locator('#lockScreen')).toBeVisible();
+
+            // Step 3: Unlock with old password to verify it still works before changing
+            await page.locator('#lockScreenUnlock').click();
+            await page.locator('#pwInput').fill('oldpassword');
+            await page.locator('#pwSubmit').click();
+            await expect(page.locator('#lockScreen')).not.toBeVisible();
+
+            // Step 4: Enter edit mode and click update password button
+            await page.locator('#editBtn').click();
+            const updatePwBtn2 = page.locator('#updatePwBtn');
+            await expect(updatePwBtn2).toBeVisible();
+            await updatePwBtn2.click();
+            await expect(page.locator('#setPwModal')).toHaveClass(/open/);
+            await expect(page.locator('#setPwTitle')).toContainText('Change Password');
+
+            // Step 5: Set new password
+            await page.locator('#setPwInput').clear();
+            await page.locator('#setPwInput').fill('newpassword');
+            await page.locator('#setPwConfirm').clear();
+            await page.locator('#setPwConfirm').fill('newpassword');
+            await page.locator('#setPwSubmit').click();
+            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
+
+            // Exit edit mode to access lockBtn
+            await page.locator('#editBtn').click();
+            const lockBtn2 = page.locator('#lockBtn');
+            await expect(lockBtn2).toBeVisible();
+
+            // Step 6: Verify old password cannot unlock
+            await lockBtn2.click();
+            await expect(page.locator('#lockScreen')).toBeVisible();
+            await page.locator('#lockScreenUnlock').click();
+            await page.locator('#pwInput').fill('oldpassword');
+            await page.locator('#pwSubmit').click();
+            // Should still be on lock screen (unlock failed)
+            await expect(page.locator('#lockScreen')).toBeVisible();
+            await expect(page.locator('#pwError')).toContainText(/incorrect|password/i);
+
+            // Step 7: Verify new password unlocks successfully
+            await page.locator('#pwInput').fill('newpassword');
+            await page.locator('#pwSubmit').click();
             await expect(page.locator('#lockScreen')).not.toBeVisible();
             await expect(page.locator('.account-card').first()).toBeVisible();
         });
@@ -383,10 +484,28 @@ test.describe('Mobile Layout', () => {
     test.use({ viewport: { width: 375, height: 812 } });
 
     test.beforeEach(async ({ page }) => {
-        await page.goto('/');
-        await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
-        await page.evaluate(() => localStorage.clear());
-        await page.reload();
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        // Clear localStorage for test isolation (after page loads so evaluate works on WebKit)
+        await page.evaluate(() => {
+            localStorage.clear();
+        });
+        // Unregister SW and clear caches (best-effort; may be restricted in some browsers)
+        try {
+            await page.evaluate(async () => {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                }
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(n => caches.delete(n)));
+                }
+            });
+        } catch {
+            // SW/Cache APIs may be restricted in some browser contexts (e.g. WebKit over HTTP)
+        }
+        // Reload to apply cleared state
+        await page.reload({ waitUntil: 'domcontentloaded' });
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
         await expect(async () => {
             const count = await page.locator('.account-card').count();
@@ -509,20 +628,20 @@ test.describe('Mobile Layout', () => {
     });
 });
 
-    test.describe('Share URL', () => {
-        test.beforeEach(async ({ page }) => {
-            await page.goto('/');
-            await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
-            await expect(async () => {
-                const count = await page.locator('.account-card').count();
-                expect(count).toBeGreaterThan(0);
-            }).toPass({ timeout: 10000 });
-        });
+test.describe('Share URL', () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
+        await expect(async () => {
+            const count = await page.locator('.account-card').count();
+            expect(count).toBeGreaterThan(0);
+        }).toPass({ timeout: 10000 });
+    });
 
-        test('share button is visible in edit mode', async ({ page }) => {
-            await page.locator('#editBtn').click();
-            await expect(page.locator('#shareBtn')).toBeVisible();
-        });
+    test('share button is visible in edit mode', async ({ page }) => {
+        await page.locator('#editBtn').click();
+        await expect(page.locator('#shareBtn')).toBeVisible();
+    });
 
     test('share button opens share modal', async ({ page }) => {
         await page.locator('#editBtn').click();
@@ -720,15 +839,21 @@ test.describe('Mobile Layout', () => {
         }, { accounts });
 
         await page.locator('#editBtn').click();
-        await page.locator('#lockBtn').click();
+        const updatePwBtn = page.locator('#updatePwBtn');
+        await expect(updatePwBtn).toBeVisible();
+        await updatePwBtn.click();
 
         await page.locator('#setPwInput').fill('vaultpassword');
         await page.locator('#setPwConfirm').fill('vaultpassword');
         await page.locator('#setPwSubmit').click();
+        // Wait for modal to close with retry
+        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/, { timeout: 15000 });
 
-        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
-
-        await page.locator('#lockBtn').click();
+        // Exit edit mode to access lockBtn
+        await page.locator('#editBtn').click();
+        const lockBtn = page.locator('#lockBtn');
+        await expect(lockBtn).toBeVisible();
+        await lockBtn.click();
 
         await expect(page.locator('#lockScreen')).toBeVisible();
 
@@ -792,10 +917,10 @@ test.describe('Mobile Layout', () => {
 
         // Navigate to URL with share data to trigger import
         await page.goto(`/?#data=${data}`);
-        
+
         // Wait for password modal
         await expect(page.locator('#passwordModal')).toHaveClass(/open/, { timeout: 10000 });
-        
+
         // Enter password to decrypt
         await page.locator('#pwInput').fill('sharepassword');
         await page.locator('#pwSubmit').click();
