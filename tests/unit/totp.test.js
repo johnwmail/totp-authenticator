@@ -1111,7 +1111,7 @@ async function runUpdatePasswordButtonTests() {
     function makeClassList() {
         const list = [];
         return {
-            add(cls) { list.push(cls); },
+            add(cls) { if (list.indexOf(cls) === -1) list.push(cls); },
             remove(cls) { const i = list.indexOf(cls); if (i !== -1) list.splice(i, 1); },
             toggle(cls, show) {
                 const i = list.indexOf(cls);
@@ -1242,10 +1242,18 @@ async function runUpdatePasswordButtonTests() {
     globalThis.setInterval = () => 1;
     globalThis.clearInterval = () => {};
 
-    // Helper: simulate unlock (set encryption + mark unlocked)
+    // Helper: encrypts vault with 'pw' AND unlocks it so vault is accessible
+    // Uses same store instance across all tests via the shared localStorage mock
     async function unlockStore() {
         const store = new totpAuth.StorageService();
-        await store.setPassword('pw');
+        if (!store.isEncrypted()) {
+            await store.setPassword('pw');
+        }
+        // At this point store.isEncrypted()=true but store.isUnlocked() depends on aesKey
+        // If aesKey is null (locked), we need to unlock. If set (unlocked), just return.
+        if (!store.isUnlocked()) {
+            await store.unlock('pw');
+        }
         return store;
     }
 
@@ -1286,6 +1294,9 @@ async function runUpdatePasswordButtonTests() {
             const ctrl = new totpAuth.KeysController();
             await ctrl.init();
             await unlockStore();
+            // Trigger re-render by toggling edit mode on then off
+            elements['#editBtn']._clickHandler();
+            elements['#editBtn']._clickHandler();
             lockBtn = elements['#lockBtn'];
             updatePwBtn = elements['#updatePwBtn'];
         }
@@ -1297,6 +1308,9 @@ async function runUpdatePasswordButtonTests() {
             const ctrl = new totpAuth.KeysController();
             await ctrl.init();
             await unlockStore();
+            // Trigger re-render by toggling edit mode on then off
+            elements['#editBtn']._clickHandler();
+            elements['#editBtn']._clickHandler();
             ({ lockBtn, updatePwBtn } = clickEditAndGetButtons());
         }
         assert(lockBtn.classList.contains('hidden'), 'encrypted + unlocked + editing → lockBtn hidden');
@@ -1308,6 +1322,9 @@ async function runUpdatePasswordButtonTests() {
             await ctrl.init();
             const store = await unlockStore();
             store.lock();
+            // Trigger re-render by toggling edit mode on then off
+            elements['#editBtn']._clickHandler();
+            elements['#editBtn']._clickHandler();
             lockBtn = elements['#lockBtn'];
             updatePwBtn = elements['#updatePwBtn'];
         }
