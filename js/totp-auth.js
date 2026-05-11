@@ -17,7 +17,7 @@
             return '';
         }
         return String(str).replace(/[&<>"']/g, c => {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c];
         });
     }
 
@@ -140,7 +140,7 @@
         }
 
         async function setPassword(password) {
-            let accounts = await getAccounts();
+            const accounts = await getAccounts();
             if (accounts === null) {
                 throw new Error('Vault is locked. Unlock before changing password.');
             }
@@ -910,7 +910,11 @@
             }
             $('#passwordModal').classList.add('open');
             setTimeout(() => {
-                $('#pwInput').focus();
+                const modal = $('#passwordModal');
+                const active = document.activeElement;
+                if (modal && modal.classList.contains('open') && (!active || !modal.contains(active))) {
+                    $('#pwInput').focus();
+                }
             }, 100);
         };
 
@@ -920,22 +924,11 @@
             $('#pwError').textContent = '';
         };
 
-        const initPasswordFieldFix = () => {
-            // Fix Firefox/WebKit quirk: Playwright .fill() appends instead of replacing on password fields.
-            // Only add listeners once to avoid accumulation on repeated modal opens.
-            if (initPasswordFieldFix._applied) return;
-            initPasswordFieldFix._applied = true;
-            const fix = (el) => el.addEventListener('beforeinput', () => { if (el.value) el.value = ''; });
-            fix($('#setPwInput'));
-            fix($('#setPwConfirm'));
-        };
-
         // Set password modal
         const openSetPassword = function () {
             $('#setPwInput').value = '';
             $('#setPwConfirm').value = '';
             $('#setPwError').textContent = '';
-            initPasswordFieldFix();
             if (store.isEncrypted()) {
                 $('#setPwTitle').textContent = 'Change Password';
                 $('#setPwHint').textContent = 'Leave empty to remove encryption.';
@@ -945,7 +938,11 @@
             }
             $('#setPwModal').classList.add('open');
             setTimeout(() => {
-                $('#setPwInput').focus();
+                const modal = $('#setPwModal');
+                const active = document.activeElement;
+                if (modal && modal.classList.contains('open') && (!active || !modal.contains(active))) {
+                    $('#setPwInput').focus();
+                }
             }, 100);
         };
 

@@ -169,7 +169,7 @@ test.describe('TOTP Authenticator E2E', () => {
 
                 expect(download.suggestedFilename()).toBe('authenticator-export.json');
 
-                const filePath = path.join(__dirname, '..', '..', 'tmp', download.suggestedFilename());
+                const filePath = test.info().outputPath(download.suggestedFilename());
                 await download.saveAs(filePath);
 
                 const fs = require('fs');
@@ -197,7 +197,7 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(page.locator('.account-card')).toHaveCount(initialCount + 1);
 
             // Step 3: Export all accounts
-            const filePath = path.join(__dirname, '..', '..', 'tmp', 'export-cycle.json');
+            const filePath = test.info().outputPath('export-cycle.json');
 
             if (browserName === 'webkit') {
                 const data = await page.evaluate(() => {
@@ -217,8 +217,9 @@ test.describe('TOTP Authenticator E2E', () => {
                         2
                     );
                 });
-                require('fs').mkdirSync(path.dirname(filePath), { recursive: true });
-                require('fs').writeFileSync(filePath, data);
+                const fs = require('fs');
+                fs.mkdirSync(path.dirname(filePath), { recursive: true });
+                fs.writeFileSync(filePath, data);
             } else {
                 const [download] = await Promise.all([
                     page.waitForEvent('download'),
@@ -268,7 +269,7 @@ test.describe('TOTP Authenticator E2E', () => {
                         'otpauth://totp/Imported:imported%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Imported&algorithm=SHA1&digits=6&period=30',
                 },
             ];
-            const importFile = path.join(__dirname, '..', '..', 'tmp', 'import-test.json');
+            const importFile = test.info().outputPath('import-test.json');
             fs.mkdirSync(path.dirname(importFile), { recursive: true });
             fs.writeFileSync(importFile, JSON.stringify(importData));
 
@@ -332,8 +333,14 @@ test.describe('TOTP Authenticator E2E', () => {
             await updatePwBtn.click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-            await page.locator('#setPwInput').fill('testpassword123');
-            await page.locator('#setPwConfirm').fill('testpassword123');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#setPwInput');
+                const confirm = document.querySelector('#setPwConfirm');
+                input.value = pw;
+                confirm.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                confirm.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'testpassword123');
             await page.locator('#setPwSubmit').click();
             // Wait for modal to close (async setPassword + key derivation may be slow on mobile)
             await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
@@ -362,10 +369,16 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(updatePwBtn).toBeVisible();
             await updatePwBtn.click();
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-            await page.locator('#setPwInput').fill('testpassword123');
-            await page.locator('#setPwConfirm').fill('testpassword123');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#setPwInput');
+                const confirm = document.querySelector('#setPwConfirm');
+                input.value = pw;
+                confirm.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                confirm.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'testpassword123');
             await page.locator('#setPwSubmit').click();
-            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
             // Exit edit mode - lockBtn should be visible
             await page.locator('#editBtn').click();
@@ -393,10 +406,16 @@ test.describe('TOTP Authenticator E2E', () => {
             await updatePwBtn.click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
-            await page.locator('#setPwInput').fill('oldpassword');
-            await page.locator('#setPwConfirm').fill('oldpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#setPwInput');
+                const confirm = document.querySelector('#setPwConfirm');
+                input.value = pw;
+                confirm.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                confirm.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'oldpassword');
             await page.locator('#setPwSubmit').click();
-            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
             // Exit edit mode to access lockBtn
             await page.locator('#editBtn').click();
@@ -421,11 +440,17 @@ test.describe('TOTP Authenticator E2E', () => {
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await expect(page.locator('#setPwTitle')).toContainText('Change Password');
 
-            // Step 5: Set new password — select all via triple-click, then fill
-            await page.locator('#setPwInput').fill('newpassword');
-            await page.locator('#setPwConfirm').fill('newpassword');
+            // Step 5: Set new password — use evaluate to bypass WebKit fill() quirks
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#setPwInput');
+                const confirm = document.querySelector('#setPwConfirm');
+                input.value = pw;
+                confirm.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                confirm.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'newpassword');
             await page.locator('#setPwSubmit').click();
-            await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
             // Exit edit mode to access lockBtn
             await page.locator('#editBtn').click();
@@ -569,7 +594,7 @@ test.describe('Mobile Layout', () => {
         await expect(page.locator('.account-card')).toHaveCount(initialCount + 1);
 
         // Export
-        const filePath = path.join(__dirname, '..', '..', 'tmp', 'export-mobile.json');
+        const filePath = test.info().outputPath('export-mobile.json');
 
         if (browserName === 'webkit') {
             const data = await page.evaluate(() => {
@@ -589,8 +614,9 @@ test.describe('Mobile Layout', () => {
                     2
                 );
             });
-            require('fs').mkdirSync(path.dirname(filePath), { recursive: true });
-            require('fs').writeFileSync(filePath, data);
+            const fs = require('fs');
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+            fs.writeFileSync(filePath, data);
         } else {
             const [download] = await Promise.all([
                 page.waitForEvent('download'),
@@ -626,7 +652,25 @@ test.describe('Mobile Layout', () => {
 
 test.describe('Share URL', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await page.evaluate(() => {
+            localStorage.clear();
+        });
+        try {
+            await page.evaluate(async () => {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map((r) => r.unregister()));
+                }
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map((n) => caches.delete(n)));
+                }
+            });
+        } catch {
+            // SW/Cache APIs may be restricted in some browser contexts
+        }
+        await page.reload({ waitUntil: 'domcontentloaded' });
         await expect(page.locator('.topbar-title')).toHaveText('TOTP Authenticator');
         await expect(async () => {
             const count = await page.locator('.account-card').count();
@@ -731,9 +775,8 @@ test.describe('Share URL', () => {
         await expect(page.locator('#passwordModal')).toHaveClass(/open/);
         await page.locator('#pwInput').fill('sharepass');
         await page.locator('#pwSubmit').click();
-        await page.waitForTimeout(500);
-        const newCount = await page.locator('.account-card').count();
-        expect(newCount).toBeGreaterThan(initialCount);
+        // Wait for import to complete and new accounts to render
+        await expect(page.locator('.account-card')).toHaveCount(initialCount + 1);
     });
 
     test('import URL with wrong password shows error', async ({ page }) => {
@@ -817,8 +860,9 @@ test.describe('Share URL', () => {
                 false,
                 ['deriveKey']
             );
+            // Use low iteration count for test payload — we're testing vault-locked rejection, not crypto strength
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 1000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -831,7 +875,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.1000';
         }, { accounts });
 
         await page.locator('#editBtn').click();
@@ -839,10 +883,17 @@ test.describe('Share URL', () => {
         await expect(updatePwBtn).toBeVisible();
         await updatePwBtn.click();
 
-        await page.locator('#setPwInput').fill('vaultpassword');
-        await page.locator('#setPwConfirm').fill('vaultpassword');
+        // Use evaluate to set password values directly, avoiding WebKit fill() quirks
+        await page.evaluate((pw) => {
+            const input = document.querySelector('#setPwInput');
+            const confirm = document.querySelector('#setPwConfirm');
+            input.value = pw;
+            confirm.value = pw;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            confirm.dispatchEvent(new Event('input', { bubbles: true }));
+        }, 'vaultpassword');
         await page.locator('#setPwSubmit').click();
-        await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
+        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
         // Exit edit mode to access lockBtn
         await page.locator('#editBtn').click();
@@ -919,11 +970,11 @@ test.describe('Share URL', () => {
         // Enter password to decrypt
         await page.locator('#pwInput').fill('sharepassword');
         await page.locator('#pwSubmit').click();
-        await page.waitForTimeout(500);
+        await expect(page.locator('#passwordModal')).not.toHaveClass(/open/);
 
         // Should have 3 accounts: 2 imported (GoogleDup, GitHubDup with same secret) + 1 existing from accounts.example.json
-        const count = await page.locator('.account-card').count();
-        expect(count).toBe(3);
+        // Use retrying assertion to avoid race condition with DOM reflow (especially on Firefox)
+        await expect(page.locator('.account-card')).toHaveCount(3);
 
         // Verify both GoogleDup and GitHubDup accounts are present
         const cardTexts = await page.locator('.account-name').allTextContents();
