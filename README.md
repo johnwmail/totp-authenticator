@@ -20,6 +20,52 @@ A lightweight, self-hosted TOTP authenticator that runs entirely in the browser.
 - **CI/CD** — GitHub Actions deploys to Cloudflare Pages on tag-based releases
 - **Version injection** — shows `vDev` locally; CI replaces it with the release tag
 
+## Cloudflare Wrangler (Local Dev & Deploy)
+
+No config file needed — the project is a static site with no build step.
+
+### Local Development
+
+```bash
+# Install Wrangler (one-time)
+npm install -D wrangler
+
+# Start local dev server
+npx wrangler pages dev . --port=8788
+```
+
+Then open `http://localhost:8788` in your browser.
+
+### Deploy to Cloudflare Pages
+
+```bash
+# Login to Cloudflare (one-time, interactive browser flow)
+npx wrangler login
+
+# Deploy to production
+npx wrangler pages deploy . --project-name=totp --branch=main
+
+# Deploy to a preview branch
+npx wrangler pages deploy . --project-name=totp --branch=preview
+```
+
+After deploying, your app will be available at `https://totp.<your-account>.pages.dev`.
+
+#### Deploying via CI / Non-interactive (Environment Variables)
+
+When running `wrangler` in CI or a headless environment, set these environment variables instead of `wrangler login`:
+
+| Variable | Description |
+|----------|-------------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with **Pages: Edit** permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID (found in the dashboard URL) |
+
+```bash
+export CLOUDFLARE_API_TOKEN="your_api_token"
+export CLOUDFLARE_ACCOUNT_ID="your_account_id"
+npx wrangler pages deploy . --project-name=totp --branch=main
+```
+
 ## Quick Start
 
 Serve the files with any static HTTP server:
@@ -33,9 +79,6 @@ npx serve .
 
 # BusyBox
 busybox httpd -f -p 8000 -h .
-
-# Cloudflare Wrangler (local preview)
-npx wrangler pages dev .
 ```
 
 Then open `http://localhost:8000` in your browser.
