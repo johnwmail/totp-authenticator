@@ -1022,8 +1022,99 @@
             dragFromIdx = -1;
             const cards = document.querySelectorAll('.account-card');
             for (let i = 0; i < cards.length; i++) {
-                cards[i].classList.remove('dragging', 'drag-over');
+                cards[i].classList.remove('dragging', 'drag-over', 'touch-dragging', 'touch-drag-over');
             }
+        };
+
+        
+        // ---- Touch-based Drag and Drop (for mobile) ----
+        let touchDragFromIdx = -1;
+        let touchClone = null;
+        let touchGhostOffsetX = 0;
+        let touchGhostOffsetY = 0;
+
+        const onTouchStart = function (e) {
+            if (!editing) return;
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+
+            const card = e.target.closest('.account-card');
+            if (!card) return;
+
+            touchDragFromIdx = parseInt(card.getAttribute('data-idx'), 10);
+            const touch = e.touches[0];
+            const rect = card.getBoundingClientRect();
+
+            touchClone = card.cloneNode(true);
+            touchClone.style.position = 'fixed';
+            touchClone.style.top = '-1000px';
+            touchClone.style.left = '-1000px';
+            touchClone.style.width = rect.width + 'px';
+            touchClone.style.zIndex = '10000';
+            touchClone.style.pointerEvents = 'none';
+            touchClone.style.opacity = '0.85';
+            touchClone.style.transform = 'rotate(2deg) scale(1.02)';
+            touchClone.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+            document.body.appendChild(touchClone);
+
+            touchGhostOffsetX = touch.clientX - rect.left;
+            touchGhostOffsetY = touch.clientY - rect.top;
+
+            card.classList.add('touch-dragging');
+            e.preventDefault();
+        };
+
+        const onTouchMove = function (e) {
+            if (touchDragFromIdx < 0) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+
+            if (touchClone) {
+                touchClone.style.left = (touch.clientX - touchGhostOffsetX) + 'px';
+                touchClone.style.top = (touch.clientY - touchGhostOffsetY) + 'px';
+            }
+
+            touchClone.style.display = 'none';
+            const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (touchClone) touchClone.style.display = '';
+
+            const cardBelow = elBelow ? elBelow.closest('.account-card') : null;
+            const cards = document.querySelectorAll('.account-card');
+            for (let i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('touch-drag-over');
+            }
+            if (cardBelow && touchDragFromIdx >= 0) {
+                cardBelow.classList.add('touch-drag-over');
+            }
+        };
+
+        const onTouchEnd = async function (e) {
+            if (touchDragFromIdx < 0) return;
+
+            if (touchClone) {
+                document.body.removeChild(touchClone);
+                touchClone = null;
+            }
+
+            const touch = e.changedTouches[0];
+            const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const cardBelow = elBelow ? elBelow.closest('.account-card') : null;
+
+            if (cardBelow) {
+                const toIdx = parseInt(cardBelow.getAttribute('data-idx'), 10);
+                if (touchDragFromIdx !== toIdx) {
+                    const accounts = (await store.getAccounts()) || [];
+                    const item = accounts.splice(touchDragFromIdx, 1)[0];
+                    accounts.splice(toIdx, 0, item);
+                    await store.saveAccounts(accounts);
+                    await render();
+                    return;
+                }
+            }
+
+            cleanupDrag();
+            touchDragFromIdx = -1;
         };
 
         // ---- Render ----
@@ -1118,6 +1209,9 @@
                     card.addEventListener('dragover', onDragOver);
                     card.addEventListener('drop', onDrop);
                     card.addEventListener('dragend', onDragEnd);
+                    card.addEventListener('touchstart', onTouchStart, { passive: false });
+                    card.addEventListener('touchmove', onTouchMove, { passive: false });
+                    card.addEventListener('touchend', onTouchEnd);
                 }
 
                 list.appendChild(card);
