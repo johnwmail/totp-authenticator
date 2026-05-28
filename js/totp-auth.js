@@ -1047,6 +1047,9 @@
         const onTouchStart = function (e) {
             if (!editing) return;
 
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+
             const card = e.target.closest('.account-card');
             if (!card) return;
 
