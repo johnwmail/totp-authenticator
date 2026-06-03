@@ -299,21 +299,47 @@
 
             /* Password row */
             .password-row {
-                display: flex;
+                margin-top: 10px;
+            }
+
+            .password-field {
+                display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                margin-top: 6px;
+                gap: 10px;
+                max-width: 100%;
+                padding: 6px 8px 6px 12px;
+                background: var(--input-bg);
+                border: 1px solid var(--input-border);
+                border-radius: 8px;
+                transition:
+                    background 0.15s,
+                    border-color 0.15s;
+            }
+
+            .password-field:has(.password-display.copied) {
+                background: var(--copied-bg);
+                border-color: transparent;
+            }
+
+            .password-label {
+                font-size: 0.68rem;
+                font-weight: 600;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                color: var(--text-dim);
+                flex-shrink: 0;
+                user-select: none;
             }
 
             .password-display {
+                flex: 1;
+                min-width: 0;
                 font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-                font-size: 0.85rem;
+                font-size: 0.82rem;
+                letter-spacing: 0.04em;
                 color: var(--code-color);
                 cursor: pointer;
-                padding: 2px 6px;
-                border-radius: 4px;
-                transition: background 0.15s;
-                min-width: 0;
+                transition: color 0.15s;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -321,17 +347,21 @@
                 position: relative;
             }
 
+            .password-value {
+                display: inline;
+            }
+
             .password-display:hover {
-                background: var(--accent-bg);
+                color: var(--accent);
             }
 
             .password-display.copied {
-                background: var(--copied-bg);
+                color: var(--code-color);
             }
 
             .password-display .copy-tip {
                 position: absolute;
-                top: -22px;
+                top: -24px;
                 left: 50%;
                 transform: translateX(-50%);
                 background: #333;
@@ -353,19 +383,31 @@
             }
 
             .password-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
                 background: none;
                 border: none;
                 color: var(--text-dim);
-                font-size: 1rem;
                 cursor: pointer;
-                padding: 2px 4px;
-                border-radius: 4px;
-                transition: color 0.15s;
+                padding: 0;
+                border-radius: 6px;
+                transition:
+                    background 0.15s,
+                    color 0.15s;
                 flex-shrink: 0;
             }
 
             .password-toggle:hover {
+                background: var(--accent-bg);
                 color: var(--accent);
+            }
+
+            .password-toggle .pw-icon {
+                width: 16px;
+                height: 16px;
             }
 
             /* Card action buttons */

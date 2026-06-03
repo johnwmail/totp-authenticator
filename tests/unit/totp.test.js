@@ -84,6 +84,7 @@ function stubEl() {
         classList: { add() {}, remove() {}, toggle() {} },
         addEventListener() {},
         querySelector() { return stubEl(); },
+        querySelectorAll() { return []; },
         setAttribute() {},
         getAttribute() { return '0'; },
         focus() {},
@@ -91,6 +92,25 @@ function stubEl() {
         textContent: '',
         value: ''
     };
+}
+
+function makeDomElement() {
+    const el = stubEl();
+    el._innerHTML = '';
+    el.children = [];
+    el.appendChild = function (child) {
+        this.children.push(child);
+        return child;
+    };
+    Object.defineProperty(el, 'innerHTML', {
+        set(v) {
+            el._innerHTML = v;
+        },
+        get() {
+            return el._innerHTML;
+        }
+    });
+    return el;
 }
 
 function makeNode(className) {
@@ -106,6 +126,8 @@ function makeNode(className) {
         value: '',
         addEventListener() {},
         appendChild(child) { child.parentNode = this; this.children.push(child); },
+        querySelector() { return makeNode(); },
+        querySelectorAll() { return []; },
         setAttribute(name, value) { this.attributes[name] = String(value); },
         getAttribute(name) { return this.attributes[name] || null; },
         closest(selector) {
@@ -389,11 +411,7 @@ async function runAccountCrudTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return {
-                className: '', setAttribute() {}, addEventListener() {},
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; },
-                innerHTML: ''
-            };
+            return makeDomElement();
         }
     };
 
@@ -487,7 +505,7 @@ async function runAccountEditTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return { className: '', setAttribute() {}, addEventListener() {}, querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; }, innerHTML: '' };
+            return makeDomElement();
         }
     };
 
@@ -598,11 +616,7 @@ async function runPasswordFieldTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return {
-                className: '', setAttribute() {}, addEventListener() {},
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; },
-                innerHTML: ''
-            };
+            return makeDomElement();
         }
     };
 
@@ -697,11 +711,13 @@ async function runImportExportTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            const el = {
-                className: '', setAttribute() {}, addEventListener() {}, innerHTML: '', href: '', download: '',
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; }, classList: { add() {}, remove() {} } }; }
+            const el = makeDomElement();
+            el.href = '';
+            el.download = '';
+            el.click = function () {
+                downloadClicked = true;
+                exportedFilename = this.download;
             };
-            el.click = function() { downloadClicked = true; exportedFilename = this.download; };
             return el;
         }
     };
@@ -840,7 +856,7 @@ async function runDarkModeTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return { className: '', setAttribute() {}, addEventListener() {}, querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; }, innerHTML: '' };
+            return makeDomElement();
         }
     };
 
@@ -932,13 +948,7 @@ async function runRenderingRaceRegressionTest() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return {
-                className: '',
-                setAttribute() {},
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; },
-                addEventListener() {},
-                innerHTML: ''
-            };
+            return makeDomElement();
         }
     };
 
@@ -1005,6 +1015,8 @@ async function runTickDedupRegressionTest() {
             value: '',
             addEventListener() {},
             appendChild(child) { child.parentNode = this; this.children.push(child); },
+            querySelector() { return makeNode(); },
+            querySelectorAll() { return []; },
             setAttribute(name, value) { this.attributes[name] = String(value); },
             getAttribute(name) { return this.attributes[name] || null; },
             closest(selector) {
@@ -1242,6 +1254,8 @@ async function runUpdatePasswordButtonTests() {
             attributes: {},
             addEventListener() {},
             appendChild(child) { child.parentNode = this; this.children.push(child); },
+            querySelector() { return makeNode(); },
+            querySelectorAll() { return []; },
             set innerHTML(v) { this._innerHTML = v; this.children = []; },
             get innerHTML() { return this._innerHTML; },
             setAttribute(name, value) { this.attributes[name] = String(value); },

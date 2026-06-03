@@ -1231,8 +1231,24 @@
                 if (acc.password) {
                     pwRowHtml =
                         '<div class="password-row">' +
-                        '<span class="password-display">••••••••<span class="copy-tip">Copied!</span></span>' +
-                        '<button class="password-toggle" title="Show password">&#x1F441;</button>' +
+                        '<div class="password-field">' +
+                        '<span class="password-label">Password</span>' +
+                        '<span class="password-display">' +
+                        '<span class="password-value">••••••••</span>' +
+                        '<span class="copy-tip">Copied!</span>' +
+                        '</span>' +
+                        '<button type="button" class="password-toggle" title="Show password" aria-label="Show password">' +
+                        '<svg class="pw-icon pw-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+                        '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
+                        '<circle cx="12" cy="12" r="3"/>' +
+                        '</svg>' +
+                        '<svg class="pw-icon pw-icon-hide hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+                        '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>' +
+                        '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>' +
+                        '<line x1="1" y1="1" x2="23" y2="23"/>' +
+                        '</svg>' +
+                        '</button>' +
+                        '</div>' +
                         '</div>';
                 }
 
@@ -1259,15 +1275,24 @@
                 if (pwEl && accountPassword) {
                     let pwVisible = false;
                     const pwMask = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+                    const pwValueEl = pwEl.querySelector('.password-value');
+                    const pwToggle = card.querySelector('.password-toggle');
+                    const pwIconShow = pwToggle ? pwToggle.querySelector('.pw-icon-show') : null;
+                    const pwIconHide = pwToggle ? pwToggle.querySelector('.pw-icon-hide') : null;
 
                     const setPasswordDisplay = function (visible) {
                         pwVisible = visible;
-                        pwEl.textContent = '';
-                        pwEl.appendChild(document.createTextNode(visible ? accountPassword : pwMask));
-                        const tip = document.createElement('span');
-                        tip.className = 'copy-tip';
-                        tip.textContent = 'Copied!';
-                        pwEl.appendChild(tip);
+                        pwValueEl.textContent = visible ? accountPassword : pwMask;
+                        if (pwIconShow) {
+                            pwIconShow.classList.toggle('hidden', visible);
+                        }
+                        if (pwIconHide) {
+                            pwIconHide.classList.toggle('hidden', !visible);
+                        }
+                        if (pwToggle) {
+                            pwToggle.title = visible ? 'Hide password' : 'Show password';
+                            pwToggle.setAttribute('aria-label', pwToggle.title);
+                        }
                     };
 
                     pwEl.addEventListener('click', function (e) {
@@ -1275,17 +1300,11 @@
                         copyToClipboard(accountPassword, this);
                     });
 
-                    const pwToggle = card.querySelector('.password-toggle');
                     if (pwToggle) {
-                        pwToggle.addEventListener('click', function () {
+                        pwToggle.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setPasswordDisplay(!pwVisible);
-                            if (pwVisible) {
-                                this.textContent = '\uD83D\uDDD8';
-                                this.title = 'Hide password';
-                            } else {
-                                this.textContent = '\uD83D\uDC41';
-                                this.title = 'Show password';
-                            }
                         });
                     }
                 }
