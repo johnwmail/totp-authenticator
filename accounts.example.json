@@ -12,6 +12,7 @@
 //   period    - Time step in seconds: 30, 60, 300, 3600, 86400 (default: 30)
 //   digits    - Code length: 6 or 8 (default: 6)
 //   url       - Optional link shown on the account name
+//   password  - Optional associated password for the account (hidden by default)
 [
   {
     "name": "user@example.com",
@@ -38,6 +39,7 @@
     "algorithm": "SHA-1",
     "period": 30,
     "digits": 6,
-    "url": "https://aws.amazon.com"
+    "url": "https://aws.amazon.com",
+    "password": "ExampleP@ssw0rd!"
   }
 ]

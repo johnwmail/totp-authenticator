@@ -84,6 +84,7 @@ function stubEl() {
         classList: { add() {}, remove() {}, toggle() {} },
         addEventListener() {},
         querySelector() { return stubEl(); },
+        querySelectorAll() { return []; },
         setAttribute() {},
         getAttribute() { return '0'; },
         focus() {},
@@ -91,6 +92,25 @@ function stubEl() {
         textContent: '',
         value: ''
     };
+}
+
+function makeDomElement() {
+    const el = stubEl();
+    el._innerHTML = '';
+    el.children = [];
+    el.appendChild = function (child) {
+        this.children.push(child);
+        return child;
+    };
+    Object.defineProperty(el, 'innerHTML', {
+        set(v) {
+            el._innerHTML = v;
+        },
+        get() {
+            return el._innerHTML;
+        }
+    });
+    return el;
 }
 
 function makeNode(className) {
@@ -106,6 +126,8 @@ function makeNode(className) {
         value: '',
         addEventListener() {},
         appendChild(child) { child.parentNode = this; this.children.push(child); },
+        querySelector() { return makeNode(); },
+        querySelectorAll() { return []; },
         setAttribute(name, value) { this.attributes[name] = String(value); },
         getAttribute(name) { return this.attributes[name] || null; },
         closest(selector) {
@@ -245,6 +267,7 @@ async function runTests() {
     console.log('\nAccount edit flow:');
 
     await runAccountEditTests();
+    await runPasswordFieldTests();
 
     // ---- JSON import/export ----
     console.log('\nJSON import/export:');
@@ -388,11 +411,7 @@ async function runAccountCrudTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return {
-                className: '', setAttribute() {}, addEventListener() {},
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; },
-                innerHTML: ''
-            };
+            return makeDomElement();
         }
     };
 
@@ -486,7 +505,7 @@ async function runAccountEditTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return { className: '', setAttribute() {}, addEventListener() {}, querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; }, innerHTML: '' };
+            return makeDomElement();
         }
     };
 
@@ -528,6 +547,22 @@ async function runAccountEditTests() {
         assert(accountsAfter[0].digits === 8, 'edit updates digits');
         assert(accountsAfter[0].url === 'https://example.com', 'edit updates url');
 
+
+        // ---- Password field tests ----
+        const keyPassword = { value: '', textContent: '', type: 'password' };
+        elements['#keyPassword'] = keyPassword;
+        elements['#toggleFormPw'] = { textContent: '\u{1F441}', addEventListener() {} };
+
+        keyPassword.value = 's3cret!';
+        keyAccount.value = 'pwtest@example.com';
+        keySecret.value = 'JBSWY3DPEHPK3PXP';
+        const pwAccounts = await store.getAccounts();
+        const pwCopy = pwAccounts.slice(0);
+        pwCopy.push({ name: 'pwtest@example.com', secret: 'JBSWY3DPEHPK3PXP', password: 's3cret!', issuer: '', algorithm: 'SHA-1', period: 30, digits: 6, url: '' });
+        await store.saveAccounts(pwCopy);
+        const pwResult = await store.getAccounts();
+        const pwAcc = pwResult.find(a => a.name === 'pwtest@example.com');
+        assert(pwAcc && pwAcc.password === 's3cret!', 'account stores password field');
     } finally {
         globalThis.document = originalDocument;
         globalThis.Storage = originalStorage;
@@ -538,6 +573,90 @@ async function runAccountEditTests() {
     }
 }
 
+
+// ---- Per-Account Password Field tests ----
+async function runPasswordFieldTests() {
+    console.log('\nPer-Account Password Field:');
+    const originalDocument = globalThis.document;
+    const originalStorage = globalThis.Storage;
+    const originalLocalStorage = globalThis.localStorage;
+    const originalFetch = globalThis.fetch;
+    const originalSetInterval = globalThis.setInterval;
+    const originalClearInterval = globalThis.clearInterval;
+
+    const mockLs = makeMockStorage();
+    mockLs.setItem('accounts', JSON.stringify([
+        { name: 'pw@example.com', secret: 'JBSWY3DPEHPK3PXP', password: 'test123' }
+    ]));
+    globalThis.Storage = function() {};
+    globalThis.localStorage = mockLs;
+
+    const elements = {};
+    const selectors = [
+        '#accounts', '#editBtn', '#exportBtn', '#importBtn', '#importFile',
+        '#resetBtn', '#addBtn', '#regenSecret', '#addKeyCancel', '#addKeyButton',
+        '#addModal', '#qrClose', '#qrModal', '#lockScreenUnlock', '#lockBtn',
+        '#passwordModal', '#pwCancel', '#pwSubmit', '#pwInput',
+        '#setPwModal', '#setPwCancel', '#setPwSubmit', '#themeBtn',
+        '#lockScreen', '#addRow', '#pwError', '#pwTitle',
+        '#setPwInput', '#setPwConfirm', '#setPwError', '#setPwTitle', '#setPwHint',
+        '#keyIssuer', '#keyAccount', '#keySecret', '#keyUrl', '#keyPassword',
+        '#keyAlgorithm', '#keyPeriod', '#keyDigits', '#modalTitle', '#toggleFormPw'
+    ];
+    selectors.forEach(sel => { elements[sel] = stubEl(); });
+    elements['#keyPassword'] = { value: '', textContent: '', type: 'password' };
+    elements['#toggleFormPw'] = { textContent: '\u{1F441}', addEventListener() {} };
+    elements['#accounts']._innerHTML = '';
+    elements['#accounts'].children = [];
+    elements['#accounts'].querySelectorAll = () => [];
+    elements['#accounts'].appendChild = function(node) { this.children.push(node); };
+
+    globalThis.document = {
+        documentElement: { setAttribute() {}, getAttribute() { return 'light'; } },
+        querySelector(sel) { return elements[sel] || stubEl(); },
+        querySelectorAll() { return []; },
+        createElement() {
+            return makeDomElement();
+        }
+    };
+
+    globalThis.fetch = async () => ({ ok: false, text: async () => '' });
+    globalThis.setInterval = () => 1;
+    globalThis.clearInterval = () => {};
+
+    try {
+        const ctrl = new totpAuth.KeysController();
+        await ctrl.init();
+
+        const store = new totpAuth.StorageService();
+        const accounts = await store.getAccounts();
+
+        assert(accounts.length >= 1, 'accounts loaded');
+        const pwAcc = accounts.find(a => a.password);
+        assert(pwAcc !== undefined, 'account has password field');
+
+        const ok = await ctrl.addAccount('pwadd@example.com', 'GEZDGNBVGY3TQOJQ', 'SHA-1', 30, 6, '', 'PwTest', 'secret456');
+        assert(ok === true, 'addAccount with password returns true');
+
+        const updated = await store.getAccounts();
+        const newAcc = updated.find(a => a.name === 'pwadd@example.com');
+        assert(newAcc && newAcc.password === 'secret456', 'addAccount stores password');
+
+        const okNoPw = await ctrl.addAccount('nopw@example.com', 'GEZDGNBVGY3TQOJQ', 'SHA-1', 30, 6, '', 'NoPw', '');
+        assert(okNoPw === true, 'addAccount without password returns true');
+        const allAccounts = await store.getAccounts();
+        const noPwAcc = allAccounts.find(a => a.name === 'nopw@example.com');
+        assert(noPwAcc && (noPwAcc.password === '' || noPwAcc.password === undefined), 'addAccount stores empty password');
+
+    } finally {
+        globalThis.document = originalDocument;
+        globalThis.Storage = originalStorage;
+        globalThis.localStorage = originalLocalStorage;
+        globalThis.fetch = originalFetch;
+        globalThis.setInterval = originalSetInterval;
+        globalThis.clearInterval = originalClearInterval;
+    }
+}
 // ---- JSON import/export tests ----
 async function runImportExportTests() {
     const originalDocument = globalThis.document;
@@ -592,11 +711,13 @@ async function runImportExportTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            const el = {
-                className: '', setAttribute() {}, addEventListener() {}, innerHTML: '', href: '', download: '',
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; }, classList: { add() {}, remove() {} } }; }
+            const el = makeDomElement();
+            el.href = '';
+            el.download = '';
+            el.click = function () {
+                downloadClicked = true;
+                exportedFilename = this.download;
             };
-            el.click = function() { downloadClicked = true; exportedFilename = this.download; };
             return el;
         }
     };
@@ -735,7 +856,7 @@ async function runDarkModeTests() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return { className: '', setAttribute() {}, addEventListener() {}, querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; }, innerHTML: '' };
+            return makeDomElement();
         }
     };
 
@@ -827,13 +948,7 @@ async function runRenderingRaceRegressionTest() {
         querySelector(sel) { return elements[sel] || stubEl(); },
         querySelectorAll() { return []; },
         createElement() {
-            return {
-                className: '',
-                setAttribute() {},
-                querySelector() { return { addEventListener() {}, getAttribute() { return '0'; } }; },
-                addEventListener() {},
-                innerHTML: ''
-            };
+            return makeDomElement();
         }
     };
 
@@ -900,6 +1015,8 @@ async function runTickDedupRegressionTest() {
             value: '',
             addEventListener() {},
             appendChild(child) { child.parentNode = this; this.children.push(child); },
+            querySelector() { return makeNode(); },
+            querySelectorAll() { return []; },
             setAttribute(name, value) { this.attributes[name] = String(value); },
             getAttribute(name) { return this.attributes[name] || null; },
             closest(selector) {
@@ -1137,6 +1254,8 @@ async function runUpdatePasswordButtonTests() {
             attributes: {},
             addEventListener() {},
             appendChild(child) { child.parentNode = this; this.children.push(child); },
+            querySelector() { return makeNode(); },
+            querySelectorAll() { return []; },
             set innerHTML(v) { this._innerHTML = v; this.children = []; },
             get innerHTML() { return this._innerHTML; },
             setAttribute(name, value) { this.attributes[name] = String(value); },

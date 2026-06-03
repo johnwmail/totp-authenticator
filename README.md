@@ -11,7 +11,8 @@ A lightweight, self-hosted TOTP authenticator that runs entirely in the browser.
 - **Auto-load accounts** from `accounts.json` on first visit
 - **Import / Export** accounts as JSON or `otpauth://` URIs
 - **QR code generation** for easy scanning into mobile authenticator apps
-- **Click-to-copy** codes to clipboard
+- **Click-to-copy** codes **and passwords** to clipboard
+- **Per-account password field** — optional, hidden by default with 👁 toggle to reveal; click to copy
 - **Responsive layout** — works on desktop and mobile
 - **Dark mode** — toggle button, respects system preference, persists in `localStorage`
 - **AES-GCM encryption** — set a password to encrypt secrets at rest using PBKDF2-SHA256 (310 000 iterations); vault locks on reload
@@ -109,10 +110,20 @@ The file supports `//` and `#` line comments.
     "algorithm": "SHA-1",            // SHA-1, SHA-256, or SHA-512 (default: SHA-1)
     "period": 30,                    // Seconds: 30, 60, 300, 3600, 86400 (default: 30)
     "digits": 6,                     // 6 or 8 (default: 6)
-    "url": "https://github.com"      // Optional link on the account name
+    "url": "https://github.com",     // Optional link on the account name
+    "password": "s3cret"             // Optional associated password (hidden by default)
   }
 ]
 ```
+
+## Per-Account Password Field
+
+Each account can store an optional **associated password** alongside its TOTP secret:
+
+- **Add/Edit modal**: new "Password (optional)" field, hidden by default (`type="password"`); click 👁 to toggle visibility
+- **Account card**: password row appears only for accounts with a password — masked as `••••••••` by default;  toggle to reveal/hide; click the password itself to copy (works whether masked or visible)
+- **Import / Export**: password is preserved under the `password` key in JSON
+- Optional — accounts without a password simply show no password row
 
 ## Encryption
 
