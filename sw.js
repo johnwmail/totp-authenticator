@@ -1,4 +1,4 @@
-const CACHE_NAME = 'totp-authenticator-v8';
+const CACHE_NAME = 'totp-authenticator-v9';
 
 const APP_SHELL_ASSETS = [
     './',

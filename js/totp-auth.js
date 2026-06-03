@@ -498,7 +498,8 @@
                     period: DEFAULTS.period,
                     digits: DEFAULTS.digits,
                     url: 'https://github.com',
-                    issuer: 'Github'
+                    issuer: 'Github',
+                    password: 'demo123'
                 }
             ]);
             await render();
@@ -604,6 +605,7 @@
             $('#regenSecret').addEventListener('click', () => {
                 $('#keySecret').value = generateRandomSecret();
             });
+            $('#toggleFormPw').addEventListener('click', toggleFormPassword);
 
             // Document-level touch handlers for drag-and-drop
             if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
@@ -1213,6 +1215,15 @@
                 }
                 actionsHtml += '</div>';
 
+                // Password row (only if account has a password)
+                let pwRowHtml = '';
+                if (acc.password) {
+                    pwRowHtml = '<div class="password-row">' +
+                        `<span class="password-display" data-pw="${escapeHtml(acc.password)}">••••••••<span class="copy-tip">Copied!</span></span>` +
+                        '<button class="password-toggle" data-pw-idx="' + i + '" title="Show password">&#x1F441;</button>' +
+                        '</div>';
+                }
+
                 card.innerHTML =
                     '<div class="account-info">' +
                     `<div class="totp-code" data-code="${code}">${code}<span class="copy-tip">Copied!</span></div>` +
@@ -1220,6 +1231,7 @@
                     `<span class="account-name">${nameHtml}</span>` +
                     ` <span class="meta-countdown">${cd}s</span>` +
                     '</div>' +
+                    pwRowHtml +
                     '</div>' +
                     actionsHtml;
 
@@ -1228,6 +1240,38 @@
                     e.preventDefault();
                     copyToClipboard(this.getAttribute('data-code'), this);
                 });
+
+                // Password click-to-copy
+                const pwEl = card.querySelector('.password-display');
+                if (pwEl) {
+                    pwEl.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        copyToClipboard(this.getAttribute('data-pw'), this);
+                    });
+                }
+
+                // Password toggle show/hide
+                const pwToggle = card.querySelector('.password-toggle');
+                if (pwToggle) {
+                    pwToggle.addEventListener('click', function () {
+                        const pwSpan = this.parentElement.querySelector('.password-display');
+                        const rawPw = pwSpan.getAttribute('data-pw');
+                        if (pwSpan.textContent.indexOf('•') === 0) {
+                            pwSpan.textContent = rawPw;
+                            this.textContent = '\uD83D\uDDD8';
+                            this.title = 'Hide password';
+                        } else {
+                            pwSpan.textContent = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+                            this.textContent = '\uD83D\uDC41';
+                            this.title = 'Show password';
+                        }
+                        // Re-append copy tip
+                        const tip = document.createElement('span');
+                        tip.className = 'copy-tip';
+                        tip.textContent = 'Copied!';
+                        pwSpan.appendChild(tip);
+                    });
+                }
 
                 card.querySelector('.qr-btn').addEventListener('click', function () {
                     showQR(parseInt(this.getAttribute('data-idx'), 10));
@@ -1340,7 +1384,8 @@
                                 item.period || DEFAULTS.period,
                                 item.digits || DEFAULTS.digits,
                                 item.url || '',
-                                item.issuer || ''
+                                item.issuer || '',
+                                item.password || ''
                             );
                             imported++;
                         } else if (item.otpauth) {
@@ -1412,7 +1457,7 @@
             render();
         };
 
-        const addAccount = async function (name, secret, algorithm, period, digits, url, issuer) {
+        const addAccount = async function (name, secret, algorithm, period, digits, url, issuer, password) {
             if (!secret) {
                 return false;
             }
@@ -1423,7 +1468,8 @@
                 period: period || DEFAULTS.period,
                 digits: digits || DEFAULTS.digits,
                 url: url || '',
-                issuer: issuer || ''
+                issuer: issuer || '',
+                password: password || ''
             };
             const accounts = (await store.getAccounts()) || [];
             accounts.push(acc);
@@ -1490,6 +1536,9 @@
             $('#keyAlgorithm').value = acc.algorithm || DEFAULTS.algorithm;
             $('#keyPeriod').value = acc.period || DEFAULTS.period;
             $('#keyDigits').value = acc.digits || DEFAULTS.digits;
+            $('#keyPassword').value = acc.password || '';
+            $('#keyPassword').type = 'password';
+            $('#toggleFormPw').textContent = '\uD83D\uDC41';
             $('#addModal').classList.add('open');
         };
 
@@ -1498,6 +1547,7 @@
             const name = $('#keyAccount').value.trim();
             const secret = $('#keySecret').value.replace(/\s/g, '');
             const url = $('#keyUrl').value.trim();
+            const password = $('#keyPassword').value;
             const algo = $('#keyAlgorithm').value;
             const period = parseInt($('#keyPeriod').value, 10);
             const digits = parseInt($('#keyDigits').value, 10);
@@ -1519,12 +1569,13 @@
                     period: period || DEFAULTS.period,
                     digits: digits || DEFAULTS.digits,
                     url: url || '',
-                    issuer: issuer || ''
+                    issuer: issuer || '',
+                    password: password || ''
                 };
                 await store.saveAccounts(accounts);
                 render();
             } else {
-                await addAccount(name, secret, algo, period, digits, url, issuer);
+                await addAccount(name, secret, algo, period, digits, url, issuer, password);
             }
             closeModal();
         };
@@ -1541,6 +1592,21 @@
             $('#keyAlgorithm').value = DEFAULTS.algorithm;
             $('#keyPeriod').value = DEFAULTS.period;
             $('#keyDigits').value = DEFAULTS.digits;
+            $('#keyPassword').value = '';
+            $('#keyPassword').type = 'password';
+            $('#toggleFormPw').textContent = '\uD83D\uDC41';
+        };
+
+        const toggleFormPassword = function () {
+            const pwInput = $('#keyPassword');
+            const toggleBtn = $('#toggleFormPw');
+            if (pwInput.type === 'password') {
+                pwInput.type = 'text';
+                toggleBtn.textContent = '\uD83D\uDDD8';
+            } else {
+                pwInput.type = 'password';
+                toggleBtn.textContent = '\uD83D\uDC41';
+            }
         };
 
         const tick = function () {
