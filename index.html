@@ -298,8 +298,8 @@
             }
 
             .meta-countdown {
-                color: var(--text-dim);
-                font-family: monospace;
+                color: var(--text);
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
                 font-size: 0.75rem;
                 font-weight: 600;
                 background: var(--accent-bg);
@@ -310,7 +310,6 @@
             /* Password row */
             .password-row {
                 margin-top: 0;
-            }
             }
 
             .password-field {
@@ -981,6 +980,11 @@
                 </div>
                 <label for="keyUrl">URL (optional)</label>
                 <input type="url" id="keyUrl" placeholder="https://example.com" />
+                <label for="keyDigits">Digits</label>
+                <select id="keyDigits">
+                    <option value="6" selected>6 digits</option>
+                    <option value="8">8 digits</option>
+                </select>
                 <label for="keyPassword">Password (optional)</label>
                 <div style="display: flex; gap: 4px; align-items: center">
                     <input
@@ -1024,11 +1028,7 @@
                     <option value="3600">1 hour</option>
                     <option value="86400">1 day</option>
                 </select>
-                <label for="keyDigits">Digits</label>
-                <select id="keyDigits">
-                    <option value="6" selected>6 digits</option>
-                    <option value="8">8 digits</option>
-                </select>
+
                 <div class="modal-actions">
                     <button class="btn-cancel" id="addKeyCancel" aria-label="Cancel adding account">
                         Cancel
