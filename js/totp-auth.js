@@ -1349,7 +1349,8 @@
                     period: acc.period || DEFAULTS.period,
                     digits: acc.digits || DEFAULTS.digits,
                     url: acc.url || '',
-                    otpauth: buildOtpauth(acc)
+                    otpauth: buildOtpauth(acc),
+                    password: acc.password || ''
                 };
             });
             const data = JSON.stringify(full, null, 2);
