@@ -856,8 +856,18 @@
         };
 
         // ---- Encryption UI ----
+        const clearSensitiveDom = function () {
+            renderToken++;
+            lastCodeStepByIndex = {};
+            const list = $('#accounts');
+            if (list) {
+                list.innerHTML = '';
+            }
+        };
+
         const showLockScreen = function () {
             stopTicker();
+            clearSensitiveDom();
             $('#lockScreen').style.display = 'flex';
             $('#accounts').style.display = 'none';
             $('#addRow').style.display = 'none';
@@ -1219,15 +1229,16 @@
                 // Password row (only if account has a password)
                 let pwRowHtml = '';
                 if (acc.password) {
-                    pwRowHtml = '<div class="password-row">' +
-                        `<span class="password-display" data-pw="${escapeHtml(acc.password)}">••••••••<span class="copy-tip">Copied!</span></span>` +
-                        '<button class="password-toggle" data-pw-idx="' + i + '" title="Show password">&#x1F441;</button>' +
+                    pwRowHtml =
+                        '<div class="password-row">' +
+                        '<span class="password-display">••••••••<span class="copy-tip">Copied!</span></span>' +
+                        '<button class="password-toggle" title="Show password">&#x1F441;</button>' +
                         '</div>';
                 }
 
                 card.innerHTML =
                     '<div class="account-info">' +
-                    `<div class="totp-code" data-code="${code}">${code}<span class="copy-tip">Copied!</span></div>` +
+                    `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     '<div class="account-meta">' +
                     `<span class="account-name">${nameHtml}</span>` +
                     ` <span class="meta-countdown">${cd}s</span>` +
@@ -1239,39 +1250,44 @@
                 const codeEl = card.querySelector('.totp-code');
                 codeEl.addEventListener('click', function (e) {
                     e.preventDefault();
-                    copyToClipboard(this.getAttribute('data-code'), this);
+                    copyToClipboard(code, this);
                 });
 
-                // Password click-to-copy
+                // Password click-to-copy (secret kept in closure, not DOM attributes)
+                const accountPassword = acc.password;
                 const pwEl = card.querySelector('.password-display');
-                if (pwEl) {
-                    pwEl.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        copyToClipboard(this.getAttribute('data-pw'), this);
-                    });
-                }
+                if (pwEl && accountPassword) {
+                    let pwVisible = false;
+                    const pwMask = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
 
-                // Password toggle show/hide
-                const pwToggle = card.querySelector('.password-toggle');
-                if (pwToggle) {
-                    pwToggle.addEventListener('click', function () {
-                        const pwSpan = this.parentElement.querySelector('.password-display');
-                        const rawPw = pwSpan.getAttribute('data-pw');
-                        if (pwSpan.textContent.indexOf('•') === 0) {
-                            pwSpan.textContent = rawPw;
-                            this.textContent = '\uD83D\uDDD8';
-                            this.title = 'Hide password';
-                        } else {
-                            pwSpan.textContent = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
-                            this.textContent = '\uD83D\uDC41';
-                            this.title = 'Show password';
-                        }
-                        // Re-append copy tip
+                    const setPasswordDisplay = function (visible) {
+                        pwVisible = visible;
+                        pwEl.textContent = '';
+                        pwEl.appendChild(document.createTextNode(visible ? accountPassword : pwMask));
                         const tip = document.createElement('span');
                         tip.className = 'copy-tip';
                         tip.textContent = 'Copied!';
-                        pwSpan.appendChild(tip);
+                        pwEl.appendChild(tip);
+                    };
+
+                    pwEl.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        copyToClipboard(accountPassword, this);
                     });
+
+                    const pwToggle = card.querySelector('.password-toggle');
+                    if (pwToggle) {
+                        pwToggle.addEventListener('click', function () {
+                            setPasswordDisplay(!pwVisible);
+                            if (pwVisible) {
+                                this.textContent = '\uD83D\uDDD8';
+                                this.title = 'Hide password';
+                            } else {
+                                this.textContent = '\uD83D\uDC41';
+                                this.title = 'Show password';
+                            }
+                        });
+                    }
                 }
 
                 card.querySelector('.qr-btn').addEventListener('click', function () {
