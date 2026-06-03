@@ -181,10 +181,10 @@
 
             .account-card {
                 background: var(--card-bg);
-                border-radius: 10px;
-                margin-bottom: 8px;
-                padding: 18px 28px;
-                box-shadow: 0 1px 3px var(--card-shadow);
+                border-radius: 12px;
+                margin-bottom: 10px;
+                padding: 16px 24px;
+                box-shadow: 0 2px 4px var(--card-shadow);
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -195,7 +195,8 @@
             }
 
             .account-card:hover {
-                box-shadow: 0 2px 8px var(--card-hover-shadow);
+                box-shadow: 0 4px 12px var(--card-hover-shadow);
+                transform: translateY(-1px);
             }
 
             .account-card.dragging {
@@ -216,17 +217,18 @@
             /* Code */
             .totp-code {
                 font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-                font-size: 1.8rem;
+                font-size: 1.9rem;
                 font-weight: 700;
-                letter-spacing: 4px;
+                letter-spacing: 5px;
                 color: var(--code-color);
                 cursor: pointer;
                 display: inline-block;
-                padding: 2px 6px;
-                border-radius: 6px;
+                padding: 2px 8px;
+                border-radius: 8px;
                 transition: background 0.15s;
                 user-select: all;
                 position: relative;
+                margin: 0 0 4px 0;
             }
 
             .totp-code:hover {
@@ -262,8 +264,12 @@
 
             /* Name row */
             .account-meta {
-                font-size: 0.9rem;
+                font-size: 0.85rem;
                 color: var(--text-muted);
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
 
             .account-name {
@@ -294,12 +300,17 @@
             .meta-countdown {
                 color: var(--text-dim);
                 font-family: monospace;
-                font-size: 0.85rem;
+                font-size: 0.75rem;
+                font-weight: 600;
+                background: var(--accent-bg);
+                padding: 2px 8px;
+                border-radius: 6px;
             }
 
             /* Password row */
             .password-row {
-                margin-top: 10px;
+                margin-top: 0;
+            }
             }
 
             .password-field {
@@ -307,7 +318,7 @@
                 align-items: center;
                 gap: 10px;
                 max-width: 100%;
-                padding: 6px 8px 6px 12px;
+                padding: 4px 8px 4px 12px;
                 background: var(--input-bg);
                 border: 1px solid var(--input-border);
                 border-radius: 8px;
