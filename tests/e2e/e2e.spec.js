@@ -475,6 +475,123 @@ test.describe('TOTP Authenticator E2E', () => {
         });
     });
 
+
+    test.describe('Per-Account Password Field', () => {
+        test('add account with password shows masked row', async ({ page }) => {
+            await page.locator('#editBtn').click();
+            await page.locator('#addBtn').click();
+
+            // Fill form including password
+            await page.locator('#keyIssuer').fill('PwTest');
+            await page.locator('#keyAccount').fill('pw@example.com');
+            await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP');
+            await page.locator('#keyPassword').fill('mySecret123');
+            await page.locator('#addKeyButton').click();
+
+            // Account card appears with password row
+            const newAccountName = page.locator('.account-name').last();
+            await expect(newAccountName).toContainText('pw@example.com');
+            await expect(page.locator('.password-display').last()).toBeVisible();
+
+            // Password is masked
+            const pwText = await page.locator('.password-display').last().textContent();
+            expect(pwText).toContain('•');
+            expect(pwText).not.toContain('mySecret123');
+        });
+
+        test('toggle password visibility shows/hides value', async ({ page }) => {
+            await page.locator('#editBtn').click();
+            await page.locator('#addBtn').click();
+
+            await page.locator('#keyIssuer').fill('ToggleTest');
+            await page.locator('#keyAccount').fill('toggle@example.com');
+            await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP');
+            await page.locator('#keyPassword').fill('revealMe');
+            await page.locator('#addKeyButton').click();
+
+            // Initially masked
+            const pwDisplay = page.locator('.password-display').last();
+            const pwToggle = page.locator('.password-toggle').last();
+            const pwTextBefore = await pwDisplay.textContent();
+            expect(pwTextBefore).toContain('•');
+            expect(pwTextBefore).not.toContain('revealMe');
+
+            // Click eye toggle to reveal
+            await pwToggle.click();
+
+            // Now visible
+            const pwTextAfter = await pwDisplay.textContent();
+            expect(pwTextAfter).toContain('revealMe');
+            expect(pwTextAfter).not.toContain('•');
+
+            // Click again to hide
+            await pwToggle.click();
+
+            // Masked again
+            const pwTextHidden = await pwDisplay.textContent();
+            expect(pwTextHidden).toContain('•');
+        });
+
+        test('click password copies value to clipboard', async ({ page, context, browserName }) => {
+            await page.locator('#editBtn').click();
+            await page.locator('#addBtn').click();
+
+            await page.locator('#keyIssuer').fill('CopyTest');
+            await page.locator('#keyAccount').fill('copy@example.com');
+            await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP');
+            await page.locator('#keyPassword').fill('copyThis123');
+            await page.locator('#addKeyButton').click();
+
+            // Reveal password first so we can verify the copied value
+            await page.locator('.password-toggle').last().click();
+
+            if (browserName === 'webkit' || browserName === 'firefox') {
+                // For browsers without clipboard API in tests, just verify the copy feedback
+                await page.locator('.password-display').last().click();
+                await expect(page.locator('.password-display').last()).toHaveClass(/copied/);
+            } else {
+                await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+                await page.locator('.password-display').last().click();
+                await expect(page.locator('.password-display').last()).toHaveClass(/copied/);
+
+                const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+                expect(clipboardText).toBe('copyThis123');
+            }
+        });
+
+        test('password field present in add/edit modal', async ({ page }) => {
+            await page.locator('#editBtn').click();
+            await page.locator('#addBtn').click();
+
+            await expect(page.locator('label[for="keyPassword"]')).toBeVisible();
+            await expect(page.locator('#keyPassword')).toBeVisible();
+            await expect(page.locator('#toggleFormPw')).toBeVisible();
+
+            // Password input is type=password by default
+            const pwType = await page.locator('#keyPassword').getAttribute('type');
+            expect(pwType).toBe('password');
+
+            // Toggle makes it visible
+            await page.locator('#toggleFormPw').click();
+            const pwTypeAfter = await page.locator('#keyPassword').getAttribute('type');
+            expect(pwTypeAfter).toBe('text');
+        });
+
+        test('account without password shows no password row', async ({ page }) => {
+            // The demo account now has a password, so add one without
+            await page.locator('#editBtn').click();
+            await page.locator('#addBtn').click();
+
+            await page.locator('#keyIssuer').fill('NoPwTest');
+            await page.locator('#keyAccount').fill('nopw@example.com');
+            await page.locator('#keySecret').fill('JBSWY3DPEHPK3PXP');
+            // Leave password empty
+            await page.locator('#addKeyButton').click();
+
+            // Count password displays - should match the demo account (1), not 2
+            await expect(page.locator('.password-display')).toHaveCount(1);
+        });
+    });
     test.describe('QR Code', () => {
         test('show and close QR code modal', async ({ page }) => {
             await page.locator('.qr-btn').first().click();
