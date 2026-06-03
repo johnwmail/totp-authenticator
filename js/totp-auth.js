@@ -1254,11 +1254,11 @@
 
                 card.innerHTML =
                     '<div class="account-info">' +
-                    `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     '<div class="account-meta">' +
                     `<span class="account-name">${nameHtml}</span>` +
                     ` <span class="meta-countdown">${cd}s</span>` +
                     '</div>' +
+                    `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     pwRowHtml +
                     '</div>' +
                     actionsHtml;
