@@ -546,7 +546,8 @@
                             period: item.period || DEFAULTS.period,
                             digits: item.digits || DEFAULTS.digits,
                             url: item.url || '',
-                            issuer: item.issuer || ''
+                            issuer: item.issuer || '',
+                            password: item.password || ''
                         });
                     } else if (item.otpauth) {
                         const parsed = parseOtpauth(item.otpauth);

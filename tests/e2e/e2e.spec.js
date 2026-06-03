@@ -1089,7 +1089,7 @@ test.describe('Share URL', () => {
         await page.locator('#pwSubmit').click();
         await expect(page.locator('#passwordModal')).not.toHaveClass(/open/);
 
-        // Should have 3 accounts: 2 imported (GoogleDup, GitHubDup with same secret) + 1 existing from accounts.example.json
+        // Should have 3 accounts: 2 imported (GoogleDup, GitHubDup with same secret) + 1 existing demo account
         // Use retrying assertion to avoid race condition with DOM reflow (especially on Firefox)
         await expect(page.locator('.account-card')).toHaveCount(3);
 
