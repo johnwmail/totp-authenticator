@@ -501,7 +501,7 @@
                 const remainingMs = periodMs - (nowMs % periodMs);
                 const pct = Math.max(0, (remainingMs / periodMs) * 100);
                 const urgent = remainingMs <= 5000;
-                bars[i].style.width = pct + '%';
+                bars[i].style.transform = 'scaleX(' + (pct / 100) + ')';
                 bars[i].classList.toggle('urgent', urgent);
                 if (countdowns[i]) {
                     countdowns[i].classList.toggle('urgent', urgent);
@@ -1303,7 +1303,7 @@
                     `<span class="account-name">${nameHtml}</span>` +
                     `<span class="meta-countdown${urgentClass}">${cd}s</span>` +
                     '</div>' +
-                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}" style="width:${pct}%"></div></div>` +
+                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}" style="transform: scaleX(${pct / 100})"></div></div>` +
                     `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     pwRowHtml +
                     '</div>' +

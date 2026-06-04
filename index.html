@@ -307,9 +307,11 @@
 
             .countdown-bar-fill {
                 height: 100%;
+                width: 100%;
                 background: var(--accent);
                 border-radius: 1px;
-                transition: none;
+                transform-origin: left center;
+                will-change: transform;
             }
 
             .countdown-bar-fill.urgent {
