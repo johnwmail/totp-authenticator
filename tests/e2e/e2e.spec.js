@@ -430,7 +430,11 @@ test.describe('TOTP Authenticator E2E', () => {
 
             // Step 3: Unlock with old password to verify it still works before changing
             await page.locator('#lockScreenUnlock').click();
-            await page.locator('#pwInput').fill('oldpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#pwInput');
+                input.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'oldpassword');
             await page.locator('#pwSubmit').click();
             await expect(page.locator('#lockScreen')).not.toBeVisible();
 
@@ -450,24 +454,32 @@ test.describe('TOTP Authenticator E2E', () => {
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 confirm.dispatchEvent(new Event('input', { bubbles: true }));
             }, 'newpassword');
-        await page.locator('#setPwSubmit').click();
-        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
+            await page.locator('#setPwSubmit').click();
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
-        // Exit edit mode
-        await page.locator('#editBtn').click();
+            // Exit edit mode
+            await page.locator('#editBtn').click();
 
-        // Click the lock button in the topbar
-        await page.locator('#lockBtn').click();
-        await expect(page.locator('#lockScreen')).toBeVisible();
+            // Click the lock button in the topbar
+            await page.locator('#lockBtn').click();
+            await expect(page.locator('#lockScreen')).toBeVisible();
             await page.locator('#lockScreenUnlock').click();
-            await page.locator('#pwInput').fill('oldpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#pwInput');
+                input.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'oldpassword');
             await page.locator('#pwSubmit').click();
             // Should still be on lock screen (unlock failed)
             await expect(page.locator('#lockScreen')).toBeVisible();
             await expect(page.locator('#pwError')).toContainText(/incorrect|password/i);
 
             // Step 7: Verify new password unlocks successfully
-            await page.locator('#pwInput').fill('newpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#pwInput');
+                input.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'newpassword');
             await page.locator('#pwSubmit').click();
             await expect(page.locator('#lockScreen')).not.toBeVisible();
             await expect(page.locator('.account-card').first()).toBeVisible();
