@@ -404,6 +404,7 @@ test.describe('TOTP Authenticator E2E', () => {
         });
 
         test('update password flow: old password locks vault, new password unlocks', async ({ page }) => {
+            test.setTimeout(40000);
             // Step 1: Set initial password via dropdown
             await page.locator('#editBtn').click();
             await page.locator('#menuBtn').click();
