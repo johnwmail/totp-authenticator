@@ -489,24 +489,24 @@
         };
 
         const updateProgressBars = function () {
+            if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') {
+                return;
+            }
             const bars = document.querySelectorAll('.countdown-bar-fill');
-            const countdowns = document.querySelectorAll('.meta-countdown');
 
             for (let i = 0; i < bars.length; i++) {
                 const card = bars[i].closest('.account-card');
-                if (!card) continue;
+                if (!card) { continue; }
                 const period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
                 const nowMs = Date.now();
                 const periodMs = period * 1000;
                 const remainingMs = periodMs - (nowMs % periodMs);
-                const pct = Math.max(0, (remainingMs / periodMs) * 100);
+                const pct = Math.max(0, remainingMs / periodMs);
                 const urgent = remainingMs <= 5000;
-                bars[i].style.width = pct + '%';
+                bars[i].style.transform = 'scaleX(' + pct + ')';
                 bars[i].classList.toggle('urgent', urgent);
-                if (countdowns[i]) {
-                    countdowns[i].classList.toggle('urgent', urgent);
-                }
             }
+
             barAnimFrame = typeof requestAnimationFrame === 'function'
                 ? requestAnimationFrame(updateProgressBars)
                 : setTimeout(updateProgressBars, 16);
@@ -514,13 +514,20 @@
 
         const stopBarAnimation = function () {
             if (barAnimFrame) {
-                cancelAnimationFrame(barAnimFrame);
+                if (typeof cancelAnimationFrame === 'function') {
+                    cancelAnimationFrame(barAnimFrame);
+                } else {
+                    clearTimeout(barAnimFrame);
+                }
                 barAnimFrame = null;
             }
         };
 
         const startBarAnimation = function () {
-            if (typeof requestAnimationFrame !== 'function' || typeof document === 'undefined') {
+            if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') {
+                return;
+            }
+            if (typeof requestAnimationFrame !== 'function' && typeof setTimeout !== 'function') {
                 return;
             }
             stopBarAnimation();
@@ -1100,13 +1107,13 @@
         const TOUCH_DRAG_THRESHOLD = 10;
 
         const onTouchStart = function (e) {
-            if (!editing) return;
+            if (!editing) { return; }
 
             const handle = e.target.closest('.drag-handle');
-            if (!handle) return;
+            if (!handle) { return; }
 
             const card = e.target.closest('.account-card');
-            if (!card) return;
+            if (!card) { return; }
 
             touchDragFromIdx = parseInt(card.getAttribute('data-idx'), 10);
             const touch = e.touches[0];
@@ -1122,7 +1129,7 @@
         };
 
         const onTouchMove = function (e) {
-            if (touchDragFromIdx < 0) return;
+            if (touchDragFromIdx < 0) { return; }
 
             const touch = e.touches[0];
             const dx = Math.abs(touch.clientX - touchStartX);
@@ -1136,7 +1143,7 @@
                 e.preventDefault();
 
                 const card = document.querySelector(`.account-card[data-idx="${touchDragFromIdx}"]`);
-                if (!card) return;
+                if (!card) { return; }
                 const rect = card.getBoundingClientRect();
 
                 touchClone = card.cloneNode(true);
@@ -1164,7 +1171,7 @@
 
             touchClone.style.display = 'none';
             const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (touchClone) touchClone.style.display = '';
+            if (touchClone) { touchClone.style.display = ''; }
 
             const cardBelow = elBelow ? elBelow.closest('.account-card') : null;
             const cards = document.querySelectorAll('.account-card');
@@ -1177,7 +1184,7 @@
         };
 
         const onTouchEnd = async function (e) {
-            if (touchDragFromIdx < 0) return;
+            if (touchDragFromIdx < 0) { return; }
 
             if (touchClone) {
                 document.body.removeChild(touchClone);
@@ -1294,7 +1301,6 @@
                         '</div>';
                 }
 
-                const pct = Math.round((cd / period) * 100);
                 const urgentClass = cd <= 5 ? ' urgent' : '';
 
                 card.innerHTML =
@@ -1303,11 +1309,17 @@
                     `<span class="account-name">${nameHtml}</span>` +
                     `<span class="meta-countdown${urgentClass}">${cd}s</span>` +
                     '</div>' +
-                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}" style="width:${pct}%"></div></div>` +
+                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}"></div></div>` +
                     `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     pwRowHtml +
                     '</div>' +
                     actionsHtml;
+
+                const bar = card.querySelector('.countdown-bar-fill');
+                const nowMs = Date.now();
+                const elapsedMs = nowMs % (period * 1000);
+                const remainingMs = (period * 1000) - elapsedMs;
+                bar.style.transform = 'scaleX(' + Math.max(0, remainingMs / (period * 1000)) + ')';
 
                 const codeEl = card.querySelector('.totp-code');
                 codeEl.addEventListener('click', function (e) {
