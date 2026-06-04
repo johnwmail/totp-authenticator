@@ -13,8 +13,10 @@ A lightweight, self-hosted TOTP authenticator that runs entirely in the browser.
 - **QR code generation** for easy scanning into mobile authenticator apps
 - **Click-to-copy** codes **and passwords** to clipboard
 - **Per-account password field** — optional, hidden by default with 👁 toggle to reveal; click to copy
-- **Responsive layout** — works on desktop and mobile
-- **Dark mode** — toggle button, respects system preference, persists in `localStorage`
+- **Responsive layout** — works on desktop and mobile with consistent UI
+- **Dark mode** — toggle in dropdown menu, respects system preference, persists in `localStorage`
+- **Dropdown menu** — Import, Export, Share, Reset, Lock, and theme toggle consolidated into one menu
+- **Modern UI** — Inter font, JetBrains Mono for codes, gradient backgrounds, glassmorphism topbar, smooth animations
 - **AES-GCM encryption** — set a password to encrypt secrets at rest using PBKDF2-SHA256 (310 000 iterations); vault locks on reload
 - **Drag-and-drop reorder** in edit mode
 - **Native Web Crypto API** — HMAC-based TOTP generation with zero external crypto dependencies
@@ -129,11 +131,13 @@ Each account can store an optional **associated password** alongside its TOTP se
 
 The app can encrypt all stored secrets at rest using **AES-256-GCM**.
 
-1. Click the **lock** button and set a password.
+1. Enter edit mode → click  menu → **Update Password** to set a password.
 2. The password is run through **PBKDF2-SHA256** (310 000 iterations) with a random 16-byte salt to derive a 256-bit AES key.
 3. Accounts are encrypted with AES-GCM (random 12-byte IV) and stored in `localStorage` under `accounts_encrypted`.
 4. Plain-text account data is removed.
 5. On reload the vault is **locked** — enter your password to decrypt and resume.
+
+To lock the vault manually, click the  lock button in the topbar (visible when encrypted and unlocked).
 
 To remove encryption, unlock the vault and clear the password.
 
@@ -141,19 +145,19 @@ All cryptographic operations use the browser's native **Web Crypto API** (`crypt
 
 ## Dark Mode
 
-Click the **☀️ / 🌙** button in the header to toggle between light and dark themes.
+Click the **theme icon** in the dropdown menu (⋮ button in edit mode) to toggle between light and dark themes.
 
 - The theme is **auto-detected by local time**: 08:00–22:00 = light, otherwise dark.
 - Click the toggle to override for the current session.
 - Theming is implemented with CSS custom properties (`data-theme` attribute on `<html>`).
-- The toggle is available in **edit mode** (click the ⚙️ gear icon).
+- The toggle is available via the dropdown menu in **edit mode** (click the edit icon).
 
 ## Import / Export
 
 | Action | How |
 |--------|-----|
-| **Export JSON** | Click the **Export** button → downloads `accounts.json` with all accounts. |
-| **Import JSON** | Click **Import** → select a `.json` file matching the account format above. |
+| **Export JSON** | Enter edit mode → click  menu → **Export** → downloads `accounts.json` with all accounts. |
+| **Import JSON** | Enter edit mode → click ⋮ menu → **Import** → select a `.json` file matching the account format above. |
 | **otpauth:// URIs** | Import/export supports standard `otpauth://totp/…` URIs for interop with other authenticator apps. |
 | **QR Codes** | In edit mode, click the QR icon on any account to display a scannable `otpauth://` QR code. Scan it with Google Authenticator, Authy, or any TOTP-compatible app. |
 
@@ -161,7 +165,7 @@ Click the **☀️ / 🌙** button in the header to toggle between light and dar
 
 Share accounts via URL — no server required.
 
-1. Click **Share** in edit mode
+1. Enter edit mode → click  menu → **Share**
 2. Enter a password and click **Generate URL**
 3. Click the URL to copy it
 4. Share the URL with anyone
