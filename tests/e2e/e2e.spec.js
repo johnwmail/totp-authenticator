@@ -404,7 +404,6 @@ test.describe('TOTP Authenticator E2E', () => {
         });
 
         test('update password flow: old password locks vault, new password unlocks', async ({ page }) => {
-            test.setTimeout(40000);
             // Step 1: Set initial password via dropdown
             await page.locator('#editBtn').click();
             await page.locator('#menuBtn').click();
@@ -439,10 +438,15 @@ test.describe('TOTP Authenticator E2E', () => {
             await page.locator('#pwSubmit').click();
             await expect(page.locator('#lockScreen')).not.toBeVisible();
 
+            // Wait for accounts to render after unlock
+            await expect(page.locator('.account-card').first()).toBeVisible();
+            await page.waitForLoadState('networkidle');
+
             // Step 4: Enter edit mode and click update password button via dropdown
             await page.locator('#editBtn').click();
-            await page.locator('#menuBtn').click();
-            await page.locator('#dropdownUpdatePw').click();
+            await page.locator('#menuBtn').click({ force: true });
+            await expect(page.locator('#dropdownMenu')).toHaveClass(/open/);
+            await page.locator('#dropdownUpdatePw').click({ force: true });
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await expect(page.locator('#setPwTitle')).toContainText('Change Password');
 
@@ -457,6 +461,9 @@ test.describe('TOTP Authenticator E2E', () => {
             }, 'newpassword');
             await page.locator('#setPwSubmit').click();
             await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
+
+            // Wait for accounts to render after password change
+            await expect(page.locator('.account-card').first()).toBeVisible();
 
             // Exit edit mode
             await page.locator('#editBtn').click();
@@ -1042,8 +1049,11 @@ test.describe('Share URL', () => {
             input.dispatchEvent(new Event('input', { bubbles: true }));
             confirm.dispatchEvent(new Event('input', { bubbles: true }));
         }, 'vaultpassword');
-        await page.locator('#setPwSubmit').click();
-        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
+            await page.locator('#setPwSubmit').click();
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
+
+            // Wait for accounts to render after password change
+            await expect(page.locator('.account-card').first()).toBeVisible();
 
             // Exit edit mode
             await page.locator('#editBtn').click();

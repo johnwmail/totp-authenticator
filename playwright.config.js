@@ -11,7 +11,7 @@ module.exports = defineConfig({
         screenshot: 'only-on-failure',
     },
     webServer: {
-        command: 'python3 -m http.server 18081 >/dev/null 2>&1',
+        command: 'npx http-server . -p 18081 -s >/dev/null 2>&1',
         port: 18081,
         reuseExistingServer: !process.env.CI,
     },
@@ -31,6 +31,7 @@ module.exports = defineConfig({
         {
             name: 'mobile-safari',
             use: { ...devices['iPhone 13'] },
+            fullyParallel: false,
         },
     ],
 });
