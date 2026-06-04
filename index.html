@@ -13,6 +13,9 @@
         <link rel="apple-touch-icon" sizes="120x120" href="img/icon_120.png?v=vDev" />
         <link rel="apple-touch-icon" sizes="152x152" href="img/icon_152.png?v=vDev" />
         <link rel="manifest" href="./manifest.json?v=vDev" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#1e88e5" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -21,67 +24,67 @@
             /* ---- Theme variables ---- */
             :root,
             [data-theme='light'] {
-                --bg: #f5f5f5;
-                --bg-gradient: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
-                --text: #222;
-                --text-muted: #999;
-                --text-dim: #bbb;
-                --card-bg: #fff;
-                --card-shadow: rgba(0, 0, 0, 0.06);
-                --card-hover-shadow: rgba(0, 0, 0, 0.1);
-                --topbar-bg: rgba(30, 136, 229, 0.85);
+                --bg: #fafafa;
+                --bg-gradient: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+                --text: #1a1a1a;
+                --text-muted: #6c757d;
+                --text-dim: #adb5bd;
+                --card-bg: #ffffff;
+                --card-shadow: rgba(0, 0, 0, 0.04);
+                --card-hover-shadow: rgba(0, 0, 0, 0.08);
+                --topbar-bg: rgba(30, 136, 229, 0.95);
                 --topbar-border: rgba(255, 255, 255, 0.1);
-                --accent: #1e88e5;
-                --accent-hover: #1565c0;
+                --accent: #2196f3;
+                --accent-hover: #1976d2;
                 --accent-bg: #e3f2fd;
-                --code-color: #222;
-                --input-bg: #fafafa;
-                --input-border: #ddd;
-                --modal-bg: #fff;
-                --btn-cancel-bg: #eee;
-                --btn-cancel-text: #555;
-                --border-dashed: #ccc;
+                --code-color: #1a1a1a;
+                --input-bg: #f8f9fa;
+                --input-border: #dee2e6;
+                --modal-bg: #ffffff;
+                --btn-cancel-bg: #e9ecef;
+                --btn-cancel-text: #495057;
+                --border-dashed: #ced4da;
                 --copied-bg: #c8e6c9;
-                --name-color: #555;
-                --link-color: #1e88e5;
-                --danger: #e53935;
-                --danger-bg: #ffebee;
-                --lock-bg: #f5f5f5;
-                --dropdown-bg: #fff;
-                --dropdown-shadow: rgba(0, 0, 0, 0.15);
-                --dropdown-hover: #f5f5f5;
+                --name-color: #495057;
+                --link-color: #2196f3;
+                --danger: #dc3545;
+                --danger-bg: #f8d7da;
+                --lock-bg: #f8f9fa;
+                --dropdown-bg: #ffffff;
+                --dropdown-shadow: rgba(0, 0, 0, 0.12);
+                --dropdown-hover: #f8f9fa;
             }
 
             [data-theme='dark'] {
-                --bg: #1a1a2e;
-                --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #16213e 100%);
-                --text: #e0e0e0;
-                --text-muted: #888;
-                --text-dim: #666;
-                --card-bg: #16213e;
-                --card-shadow: rgba(0, 0, 0, 0.3);
-                --card-hover-shadow: rgba(0, 0, 0, 0.5);
-                --topbar-bg: rgba(15, 52, 96, 0.85);
-                --topbar-border: rgba(255, 255, 255, 0.08);
-                --accent: #4fc3f7;
-                --accent-hover: #29b6f6;
-                --accent-bg: rgba(79, 195, 247, 0.15);
-                --code-color: #e0e0e0;
-                --input-bg: #1a1a2e;
-                --input-border: #333;
-                --modal-bg: #16213e;
-                --btn-cancel-bg: #2a2a4a;
-                --btn-cancel-text: #aaa;
-                --border-dashed: #444;
-                --copied-bg: #2e7d32;
-                --name-color: #aaa;
-                --link-color: #4fc3f7;
-                --danger: #ef5350;
-                --danger-bg: rgba(239, 83, 80, 0.15);
-                --lock-bg: #1a1a2e;
-                --dropdown-bg: #16213e;
-                --dropdown-shadow: rgba(0, 0, 0, 0.4);
-                --dropdown-hover: #1a1a2e;
+                --bg: #0d1117;
+                --bg-gradient: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+                --text: #e6edf3;
+                --text-muted: #8b949e;
+                --text-dim: #484f58;
+                --card-bg: #161b22;
+                --card-shadow: rgba(0, 0, 0, 0.4);
+                --card-hover-shadow: rgba(0, 0, 0, 0.6);
+                --topbar-bg: rgba(22, 27, 34, 0.95);
+                --topbar-border: rgba(255, 255, 255, 0.06);
+                --accent: #58a6ff;
+                --accent-hover: #79c0ff;
+                --accent-bg: rgba(88, 166, 255, 0.15);
+                --code-color: #e6edf3;
+                --input-bg: #0d1117;
+                --input-border: #30363d;
+                --modal-bg: #161b22;
+                --btn-cancel-bg: #21262d;
+                --btn-cancel-text: #8b949e;
+                --border-dashed: #30363d;
+                --copied-bg: #238636;
+                --name-color: #8b949e;
+                --link-color: #58a6ff;
+                --danger: #f85149;
+                --danger-bg: rgba(248, 81, 73, 0.15);
+                --lock-bg: #0d1117;
+                --dropdown-bg: #161b22;
+                --dropdown-shadow: rgba(0, 0, 0, 0.5);
+                --dropdown-hover: #21262d;
             }
 
             * {
@@ -91,7 +94,7 @@
             }
 
             body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: var(--bg-gradient);
                 background-attachment: fixed;
                 color: var(--text);
@@ -99,28 +102,31 @@
                 transition:
                     background 0.3s,
                     color 0.3s;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
             }
 
             /* ---- Top bar ---- */
             .topbar {
                 background: var(--topbar-bg);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
                 color: #fff;
                 display: flex;
                 align-items: center;
-                padding: 12px 16px;
+                padding: 14px 20px;
                 position: sticky;
                 top: 0;
                 z-index: 10;
-                transition: background 0.3s;
+                transition: background 0.3s ease;
                 border-bottom: 1px solid var(--topbar-border);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
 
             .topbar-left {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 10px;
                 flex: 1;
                 min-width: 0;
                 overflow: hidden;
@@ -128,9 +134,9 @@
 
             .topbar-title {
                 text-align: left;
-                font-size: 1.15rem;
+                font-size: 1.1rem;
                 font-weight: 600;
-                letter-spacing: 0.5px;
+                letter-spacing: -0.01em;
                 white-space: nowrap;
                 color: #fff;
                 text-decoration: none;
@@ -138,15 +144,15 @@
             }
 
             .topbar-title:hover {
-                opacity: 0.85;
+                opacity: 0.9;
             }
 
             .topbar-version {
                 font-size: 0.65rem;
                 font-weight: 600;
-                color: rgba(255, 255, 255, 0.9);
-                background: rgba(255, 255, 255, 0.18);
-                padding: 2px 8px;
+                color: rgba(255, 255, 255, 0.85);
+                background: rgba(255, 255, 255, 0.15);
+                padding: 3px 8px;
                 border-radius: 10px;
                 white-space: nowrap;
                 letter-spacing: 0.3px;
@@ -155,7 +161,7 @@
 
             .topbar-actions {
                 display: flex;
-                gap: 4px;
+                gap: 6px;
                 align-items: center;
                 flex-shrink: 0;
                 position: relative;
@@ -173,9 +179,9 @@
                 justify-content: center;
                 opacity: 0.85;
                 transition:
-                    opacity 0.15s,
-                    background 0.15s,
-                    transform 0.1s;
+                    opacity 0.15s ease,
+                    background 0.15s ease,
+                    transform 0.1s ease;
             }
 
             .topbar-actions button:hover {
@@ -184,12 +190,12 @@
             }
 
             .topbar-actions button:active {
-                transform: scale(0.95);
+                transform: scale(0.92);
             }
 
             .topbar-actions button.active {
                 opacity: 1;
-                background: rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.2);
             }
 
             .topbar-actions button.hidden {
@@ -237,16 +243,16 @@
             .dropdown-menu {
                 display: none;
                 position: fixed;
-                top: 56px;
-                right: 16px;
+                top: 58px;
+                right: 20px;
                 background: var(--dropdown-bg);
                 border-radius: 12px;
-                box-shadow: 0 8px 32px var(--dropdown-shadow);
-                min-width: 180px;
+                box-shadow: 0 10px 40px var(--dropdown-shadow), 0 2px 8px rgba(0,0,0,0.08);
+                min-width: 200px;
                 padding: 8px;
                 z-index: 1000;
                 border: 1px solid var(--input-border);
-                animation: dropdownSlide 0.15s ease-out;
+                animation: dropdownSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
             .dropdown-menu.open {
@@ -256,11 +262,11 @@
             @keyframes dropdownSlide {
                 from {
                     opacity: 0;
-                    transform: translateY(-8px);
+                    transform: translateY(-8px) scale(0.96);
                 }
                 to {
                     opacity: 1;
-                    transform: translateY(0);
+                    transform: translateY(0) scale(1);
                 }
             }
 
@@ -277,7 +283,7 @@
                 font-weight: 500;
                 cursor: pointer;
                 border-radius: 8px;
-                transition: background 0.15s;
+                transition: background 0.15s ease;
                 text-align: left;
             }
 
@@ -313,28 +319,28 @@
 
             .account-card {
                 background: var(--card-bg);
-                border-radius: 16px;
+                border-radius: 12px;
                 margin-bottom: 12px;
-                padding: 18px 22px;
-                box-shadow: 0 2px 8px var(--card-shadow);
-                border: 1px solid var(--input-border, rgba(255,255,255,0.06));
+                padding: 20px 24px;
+                box-shadow: 0 1px 3px var(--card-shadow), 0 1px 2px rgba(0,0,0,0.02);
+                border: 1px solid var(--input-border, rgba(0,0,0,0.06));
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 14px;
                 transition:
-                    box-shadow 0.2s,
+                    box-shadow 0.2s ease,
                     background 0.3s,
-                    transform 0.15s,
-                    border-color 0.15s;
+                    transform 0.15s ease,
+                    border-color 0.2s ease;
                 position: relative;
                 overflow: hidden;
-                animation: cardSlideIn 0.25s ease-out;
+                animation: cardSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
             @keyframes cardSlideIn {
                 from {
                     opacity: 0;
-                    transform: translateY(8px);
+                    transform: translateY(12px);
                 }
                 to {
                     opacity: 1;
@@ -351,12 +357,12 @@
                 width: 3px;
                 background: var(--accent);
                 opacity: 0;
-                transition: opacity 0.2s;
+                transition: opacity 0.2s ease;
             }
 
             .account-card:hover {
-                box-shadow: 0 4px 20px var(--card-hover-shadow);
-                border-color: var(--accent, rgba(30,136,229,0.3));
+                box-shadow: 0 4px 12px var(--card-hover-shadow), 0 2px 4px rgba(0,0,0,0.04);
+                border-color: var(--accent, rgba(33,150,243,0.2));
             }
 
             .account-card:hover::before {
@@ -388,20 +394,20 @@
             }
 
             .account-name {
-                font-size: 0.9rem;
+                font-size: 0.95rem;
                 font-weight: 600;
                 color: var(--name-color);
-                letter-spacing: 0.01em;
+                letter-spacing: -0.01em;
             }
 
             .account-name a {
                 color: var(--link-color);
                 text-decoration: none;
-                transition: opacity 0.15s;
+                transition: opacity 0.15s ease;
             }
 
             .account-name a:hover {
-                opacity: 0.8;
+                opacity: 0.75;
             }
 
             .account-name .name-issuer {
@@ -420,25 +426,25 @@
 
             .meta-extra {
                 color: var(--text-dim);
-                font-family: monospace;
+                font-family: 'JetBrains Mono', monospace;
                 font-size: 0.75rem;
             }
 
             .meta-countdown {
-                font-size: 0.7rem;
+                font-size: 0.72rem;
                 font-weight: 600;
-                font-family: 'SF Mono', 'Fira Code', monospace;
+                font-family: 'JetBrains Mono', 'SF Mono', monospace;
                 color: var(--text-dim);
                 background: var(--accent-bg);
-                padding: 3px 8px;
+                padding: 4px 10px;
                 border-radius: 6px;
                 flex-shrink: 0;
-                transition: color 0.2s, background 0.2s;
+                transition: color 0.2s ease, background 0.2s ease;
             }
 
             .meta-countdown.urgent {
                 color: #ef4444;
-                background: rgba(239, 68, 68, 0.15);
+                background: rgba(239, 68, 68, 0.12);
                 animation: urgentPulse 1s ease-in-out infinite;
             }
 
@@ -449,9 +455,9 @@
 
             /* Countdown progress bar - spans full card width */
             .countdown-bar {
-                height: 3px;
+                height: 4px;
                 background: var(--accent-bg);
-                border-radius: 2px;
+                border-radius: 4px;
                 overflow: hidden;
                 width: 100%;
                 flex-shrink: 0;
@@ -460,43 +466,43 @@
             .countdown-bar-fill {
                 height: 100%;
                 width: 100%;
-                background: var(--accent);
-                border-radius: 2px;
+                background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+                border-radius: 4px;
                 transform-origin: left;
                 transition: transform 0.1s linear;
             }
 
             .countdown-bar-fill.urgent {
-                background: #ef4444;
+                background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
             }
 
             /* Code */
             .totp-code {
-                font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+                font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Courier New', monospace;
                 font-size: 2rem;
                 font-weight: 700;
-                letter-spacing: 6px;
+                letter-spacing: 8px;
                 color: var(--code-color);
                 cursor: pointer;
                 display: inline-block;
-                padding: 8px 16px;
-                border-radius: 12px;
+                padding: 10px 20px;
+                border-radius: 10px;
                 background: transparent;
-                transition: background 0.15s, color 0.15s, transform 0.1s;
+                transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
                 user-select: all;
                 position: relative;
             }
 
             .totp-code:hover {
-                background: rgba(30,136,229,0.1);
+                background: var(--accent-bg);
             }
 
             .totp-code:active {
-                transform: scale(0.98);
+                transform: scale(0.97);
             }
 
             .totp-code.copied {
-                background: rgba(34, 197, 94, 0.12);
+                background: rgba(34, 197, 94, 0.1);
                 color: #22c55e;
             }
 
@@ -557,8 +563,8 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: color 0.15s, background 0.15s, transform 0.1s;
-                opacity: 0.5;
+                transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+                opacity: 0.6;
             }
 
             .card-actions button:hover {
@@ -566,7 +572,7 @@
             }
 
             .account-card:hover .card-actions button {
-                opacity: 0.7;
+                opacity: 0.75;
             }
 
             .card-actions button:hover {
@@ -575,7 +581,7 @@
             }
 
             .card-actions button:active {
-                transform: scale(0.92);
+                transform: scale(0.9);
             }
 
             .card-actions .delete-btn:hover {
