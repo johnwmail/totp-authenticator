@@ -1252,12 +1252,16 @@
                         '</div>';
                 }
 
+                const pct = Math.round((cd / period) * 100);
+                const urgentClass = cd <= 5 ? ' urgent' : '';
+
                 card.innerHTML =
                     '<div class="account-info">' +
                     '<div class="account-meta">' +
                     `<span class="account-name">${nameHtml}</span>` +
-                    ` <span class="meta-countdown">${cd}s</span>` +
+                    `<span class="meta-countdown${urgentClass}">${cd}s</span>` +
                     '</div>' +
+                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}" style="width:${pct}%"></div></div>` +
                     `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     pwRowHtml +
                     '</div>' +
@@ -1653,6 +1657,7 @@
             }
 
             const countdowns = document.querySelectorAll('.meta-countdown');
+            const bars = document.querySelectorAll('.countdown-bar-fill');
             const codes = document.querySelectorAll('.totp-code');
             let needsFullRender = false;
 
@@ -1664,7 +1669,14 @@
                 const period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
                 const step = Math.floor(now / period);
                 const cd = period - (now % period);
+                const pct = Math.round((cd / period) * 100);
+                const urgent = cd <= 5;
                 countdowns[i].textContent = `${cd}s`;
+                countdowns[i].classList.toggle('urgent', urgent);
+                if (bars[i]) {
+                    bars[i].style.width = pct + '%';
+                    bars[i].classList.toggle('urgent', urgent);
+                }
 
                 if (lastCodeStepByIndex[i] !== step) {
                     needsFullRender = true;
