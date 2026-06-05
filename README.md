@@ -14,11 +14,15 @@ A lightweight, self-hosted TOTP authenticator that runs entirely in the browser.
 - **Click-to-copy** codes **and passwords** to clipboard
 - **Per-account password field** — optional, hidden by default with 👁 toggle to reveal; click to copy
 - **Responsive layout** — works on desktop and mobile with consistent UI
-- **Dark mode** — toggle in dropdown menu, respects system preference, persists in `localStorage`
-- **Dropdown menu** — Import, Export, Share, Reset, Lock, and theme toggle consolidated into one menu
+- **Dark mode** — toggle in dropdown menu, auto-detected by local time (08:00–22:00 = light), session override
+- **Dropdown menu** — Theme, Lock, Change Password, Import, Export, Share, Reload, and Reset consolidated into one menu
 - **Modern UI** — Inter font, JetBrains Mono for codes, gradient backgrounds, glassmorphism topbar, smooth animations
-- **AES-GCM encryption** — set a password to encrypt secrets at rest using PBKDF2-SHA256 (310 000 iterations); vault locks on reload
+- **AES-GCM encryption** — set a password to encrypt secrets at rest using PBKDF2-SHA256 (600 000 iterations); vault locks on reload
 - **Drag-and-drop reorder** in edit mode
+- **Swipe-to-reveal actions** on mobile cards
+- **Countdown progress bar** — animated bar shows remaining time; turns red when ≤ 5 s
+- **Clipboard auto-clear** — copied values cleared after 30 s for security
+- **PWA support** — installable as standalone app via service worker and web manifest
 - **Native Web Crypto API** — HMAC-based TOTP generation with zero external crypto dependencies
 - **CI/CD** — GitHub Actions deploys to Cloudflare Pages on tag-based releases
 - **Version injection** — shows `vDev` locally; CI replaces it with the release tag
@@ -131,13 +135,13 @@ Each account can store an optional **associated password** alongside its TOTP se
 
 The app can encrypt all stored secrets at rest using **AES-256-GCM**.
 
-1. Enter edit mode → click  menu → **Update Password** to set a password.
-2. The password is run through **PBKDF2-SHA256** (310 000 iterations) with a random 16-byte salt to derive a 256-bit AES key.
+1. Enter edit mode → click ⋮ menu → **Change Password** to set a password.
+2. The password is run through **PBKDF2-SHA256** (600 000 iterations) with a random 16-byte salt to derive a 256-bit AES key.
 3. Accounts are encrypted with AES-GCM (random 12-byte IV) and stored in `localStorage` under `accounts_encrypted`.
 4. Plain-text account data is removed.
 5. On reload the vault is **locked** — enter your password to decrypt and resume.
 
-To lock the vault manually, click the  lock button in the topbar (visible when encrypted and unlocked).
+To lock the vault manually, click the 🔒 lock button in the topbar (visible when encrypted and unlocked).
 
 To remove encryption, unlock the vault and clear the password.
 
@@ -156,7 +160,7 @@ Click the **theme icon** in the dropdown menu (⋮ button in edit mode) to toggl
 
 | Action | How |
 |--------|-----|
-| **Export JSON** | Enter edit mode → click  menu → **Export** → downloads `accounts.json` with all accounts. |
+| **Export JSON** | Enter edit mode → click ⋮ menu → **Export** → downloads `authenticator-export.json` with all accounts. |
 | **Import JSON** | Enter edit mode → click ⋮ menu → **Import** → select a `.json` file matching the account format above. |
 | **otpauth:// URIs** | Import/export supports standard `otpauth://totp/…` URIs for interop with other authenticator apps. |
 | **QR Codes** | In edit mode, click the QR icon on any account to display a scannable `otpauth://` QR code. Scan it with Google Authenticator, Authy, or any TOTP-compatible app. |
@@ -165,7 +169,7 @@ Click the **theme icon** in the dropdown menu (⋮ button in edit mode) to toggl
 
 Share accounts via URL — no server required.
 
-1. Enter edit mode → click  menu → **Share**
+1. Enter edit mode → click ⋮ menu → **Share**
 2. Enter a password and click **Generate URL**
 3. Click the URL to copy it
 4. Share the URL with anyone
@@ -177,10 +181,10 @@ Recipients open the URL → enter password → accounts merge into their local s
 accounts → lz-string.compress → AES-GCM.encrypt(password) → base64 → #data=...
 ```
 
-- Uses the same AES-GCM + PBKDF2 (310 000 iterations) as encryption at rest
+- Uses the same AES-GCM + PBKDF2 (600 000 iterations) as encryption at rest
 - URL data is stored entirely in the URL fragment (`#data=`) — never sent to a server
 - After 3 failed password attempts, the URL is cleared to prevent brute force
-- Imported accounts are merged with existing accounts (no duplicates by secret)
+- Imported accounts are merged with existing accounts (no duplicates by composite key: issuer + name + secret)
 
 ## CI/CD Deployment
 
@@ -188,8 +192,8 @@ The project deploys to **Cloudflare Pages** via GitHub Actions (`.github/workflo
 
 | Trigger | Branch / Ref | Deployment |
 |---------|-------------|------------|
-| Push tag `v*` | `main` | **Production** → [totp-1sr.pages.dev](https://totp-1sr.pages.dev) |
-| Pull request | PR branch | **Preview** (unique URL per PR) |
+| Push tag `v*` | `main` | **Production** → [totp-1sr.pages.dev](https://totp-1sr.pages.dev) + GitHub Release (zip/tar.gz) |
+| Manual (`workflow_dispatch`) | — | **Preview** deploy |
 
 **CI Pipeline:**
 1. **Unit Tests** — `npm test`
@@ -241,6 +245,7 @@ Use the **Export** button regularly to back up your accounts. `localStorage` can
 - **Web Crypto API** (`crypto.subtle`) for HMAC-SHA-1/256/512 (TOTP) and AES-GCM + PBKDF2 (encryption)
 - [qrcode.js](https://github.com/davidshimjs/qrcodejs) vendored in `lib/` — QR code generation
 - [lz-string](https://github.com/pieroxy/lz-string) vendored in `lib/` — compression for Share URL feature
+- **Service Worker** — offline-capable PWA with cache-first strategy (`sw.js`, `manifest.json`)
 - CSS custom properties for light / dark theming
 - [Playwright](https://playwright.dev/) for E2E testing
 
