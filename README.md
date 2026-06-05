@@ -20,7 +20,7 @@ A lightweight, self-hosted TOTP authenticator that runs entirely in the browser.
 - **AES-GCM encryption** — set a password to encrypt secrets at rest using PBKDF2-SHA256 (600 000 iterations); vault locks on reload
 - **Drag-and-drop reorder** in edit mode
 - **Swipe-to-reveal actions** on mobile cards
-- **Countdown progress bar** — animated bar shows remaining time; turns red when ≤ 5 s
+- **Countdown timer** — shows remaining seconds; turns red and bold when ≤ 5 s
 - **Clipboard auto-clear** — copied values cleared after 30 s for security
 - **PWA support** — installable as standalone app via service worker and web manifest
 - **Native Web Crypto API** — HMAC-based TOTP generation with zero external crypto dependencies

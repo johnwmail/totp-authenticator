@@ -475,7 +475,6 @@
         let editIndex = -1;
         let renderToken = 0;
         let tickTimer = null;
-        let barAnimFrame = null;
         let lastRenderedAt = 0;
         let lastCodeStepByIndex = {};
 
@@ -488,7 +487,6 @@
                 clearInterval(tickTimer);
             }
             tickTimer = setInterval(tick, 1000);
-            startBarAnimation();
         };
 
         const stopTicker = function () {
@@ -496,53 +494,6 @@
                 clearInterval(tickTimer);
             }
             tickTimer = null;
-            stopBarAnimation();
-        };
-
-        const updateProgressBars = function () {
-            if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') {
-                return;
-            }
-            const bars = document.querySelectorAll('.countdown-bar-fill');
-
-            for (let i = 0; i < bars.length; i++) {
-                const card = bars[i].closest('.account-card');
-                if (!card) { continue; }
-                const period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
-                const nowMs = Date.now();
-                const periodMs = period * 1000;
-                const remainingMs = periodMs - (nowMs % periodMs);
-                const pct = Math.max(0, remainingMs / periodMs);
-                const urgent = remainingMs <= 5000;
-                bars[i].style.transform = 'scaleX(' + pct + ')';
-                bars[i].classList.toggle('urgent', urgent);
-            }
-
-            barAnimFrame = typeof requestAnimationFrame === 'function'
-                ? requestAnimationFrame(updateProgressBars)
-                : setTimeout(updateProgressBars, 16);
-        };
-
-        const stopBarAnimation = function () {
-            if (barAnimFrame) {
-                if (typeof cancelAnimationFrame === 'function') {
-                    cancelAnimationFrame(barAnimFrame);
-                } else {
-                    clearTimeout(barAnimFrame);
-                }
-                barAnimFrame = null;
-            }
-        };
-
-        const startBarAnimation = function () {
-            if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') {
-                return;
-            }
-            if (typeof requestAnimationFrame !== 'function' && typeof setTimeout !== 'function') {
-                return;
-            }
-            stopBarAnimation();
-            updateProgressBars();
         };
 
         const addFallbackAccount = async function () {
@@ -1524,15 +1475,7 @@
                     pwRowHtml +
                     '</div>' +
                     actionsHtml +
-                    '</div>' +
-                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}"></div></div>` +
                     '</div>';
-
-                const bar = card.querySelector('.countdown-bar-fill');
-                const nowMs = Date.now();
-                const elapsedMs = nowMs % (period * 1000);
-                const remainingMs = (period * 1000) - elapsedMs;
-                bar.style.transform = 'scaleX(' + Math.max(0, remainingMs / (period * 1000)) + ')';
 
                 const codeEl = card.querySelector('.totp-code');
                 codeEl.addEventListener('click', function (e) {

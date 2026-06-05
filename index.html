@@ -445,35 +445,13 @@
             .meta-countdown.urgent {
                 color: #ef4444;
                 background: rgba(239, 68, 68, 0.12);
+                font-weight: 700;
                 animation: urgentPulse 1s ease-in-out infinite;
             }
 
             @keyframes urgentPulse {
                 0%, 100% { opacity: 1; }
                 50% { opacity: 0.7; }
-            }
-
-            /* Countdown progress bar - spans full card width */
-            .countdown-bar {
-                height: 4px;
-                background: var(--accent-bg);
-                border-radius: 4px;
-                overflow: hidden;
-                width: 100%;
-                flex-shrink: 0;
-            }
-
-            .countdown-bar-fill {
-                height: 100%;
-                width: 100%;
-                background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
-                border-radius: 4px;
-                transform-origin: left;
-                transition: transform 0.1s linear;
-            }
-
-            .countdown-bar-fill.urgent {
-                background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
             }
 
             /* Code */
@@ -1290,11 +1268,6 @@
                 .card-content.swiping,
                 .card-content.swipe-open {
                     transform: none;
-                }
-
-                /* Countdown bar on mobile - slightly thicker */
-                .countdown-bar {
-                    height: 4px;
                 }
 
                 /* Show drag handle on mobile in edit mode */
