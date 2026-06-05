@@ -1673,7 +1673,7 @@
                 const text = ev.target.result;
                 let imported = 0;
                 try {
-                    let arr = JSON.parse(text);
+                    let arr = JSON.parse(stripJsonComments(text));
                     if (!Array.isArray(arr)) {
                         arr = [arr];
                     }
