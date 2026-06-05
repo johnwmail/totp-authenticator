@@ -23,6 +23,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "eslint": "^8.57.0",
+    "http-server": "^14.1.1",
     "lz-string": "^1.5.0",
     "prettier": "^3.2.5"
   }

@@ -12,6 +12,17 @@
         digits: 6
     };
 
+    const ICONS = {
+        qr: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg>',
+        edit: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+        delete: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+        drag: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>',
+        sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+        moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+        eyeShow: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+        eyeHide: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    };
+
     function escapeHtml(str) {
         if (!str) {
             return '';
@@ -67,7 +78,7 @@
         }
 
         async function deriveKey(password, salt, iterations) {
-            iterations = iterations || 310000;
+            iterations = iterations || 600000;
             const enc = new TextEncoder();
             const baseKey = await crypto.subtle.importKey(
                 'raw',
@@ -107,7 +118,7 @@
             const jsonStr = JSON.stringify(data);
             const compressed = LZString.compressToUTF16(jsonStr);
             const salt = randomBytes(16);
-            const iterations = 310000;
+            const iterations = 600000;
             const key = await deriveKey(password, salt, iterations);
             const iv = randomBytes(12);
             const enc = new TextEncoder();
@@ -153,7 +164,7 @@
                 return;
             }
             const salt = randomBytes(16);
-            const iterations = 310000;
+            const iterations = 600000;
             aesKey = await deriveKey(password, salt, iterations);
             const meta = { salt: bufToBase64(salt), iter: iterations };
             localStorage.setItem(KEYS.meta, JSON.stringify(meta));
@@ -657,11 +668,64 @@
             });
             $('#toggleFormPw').addEventListener('click', toggleFormPassword);
 
-            // Document-level touch handlers for drag-and-drop
+            // Dropdown menu
+            $('#menuBtn').addEventListener('click', toggleDropdown);
+            $('#dropdownTheme').addEventListener('click', () => {
+                toggleTheme();
+                closeDropdown();
+            });
+            $('#dropdownLock').addEventListener('click', () => {
+                onLockToggle();
+                closeDropdown();
+            });
+            $('#dropdownUpdatePw').addEventListener('click', () => {
+                openSetPassword();
+                closeDropdown();
+            });
+            $('#dropdownImport').addEventListener('click', () => {
+                $('#importFile').click();
+                closeDropdown();
+            });
+            $('#dropdownExport').addEventListener('click', () => {
+                exportAccounts();
+                closeDropdown();
+            });
+            $('#dropdownShare').addEventListener('click', () => {
+                openShareModal();
+                closeDropdown();
+            });
+            $('#dropdownReload').addEventListener('click', () => {
+                hardReloadApp();
+                closeDropdown();
+            });
+            $('#dropdownReset').addEventListener('click', () => {
+                resetAccounts();
+                closeDropdown();
+            });
+            if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+                document.addEventListener('click', (e) => {
+                    const dropdown = $('#dropdownMenu');
+                    const menuBtn = $('#menuBtn');
+                    if (dropdown && !dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
+                        closeDropdown();
+                    }
+                });
+            }
+            // Document-level touch handlers for drag-and-drop and swipe
             if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
                 document.addEventListener('touchmove', onTouchMove, { passive: false });
                 document.addEventListener('touchend', onTouchEnd);
                 document.addEventListener('touchcancel', onTouchEnd);
+                // Swipe-to-reveal handlers
+                document.addEventListener('touchstart', onSwipeStart, { passive: true });
+                document.addEventListener('touchmove', onSwipeMove, { passive: false });
+                document.addEventListener('touchend', onSwipeEnd);
+                // Close swipe on outside click
+                document.addEventListener('click', (e) => {
+                    if (swipeOpen && !e.target.closest('.card-content')) {
+                        closeAllSwipes();
+                    }
+                });
             }
             $('#addKeyCancel').addEventListener('click', closeModal);
             $('#addKeyButton').addEventListener('click', onSave);
@@ -735,8 +799,42 @@
                 startTicker();
             }
 
+            // Update lock icon visibility based on initial state
+            updateLockIcon();
+
             // Check for share URL on load
             checkShareUrl();
+        };
+
+        const toggleDropdown = function () {
+            const dropdown = $('#dropdownMenu');
+            if (dropdown) {
+                const isOpen = dropdown.classList.toggle('open');
+                if (isOpen) {
+                    updateDropdownItems();
+                }
+            }
+        };
+
+        const updateDropdownItems = function () {
+            const dropdownLock = $('#dropdownLock');
+            const dropdownUpdatePw = $('#dropdownUpdatePw');
+            if (!dropdownLock) { return; }
+            const isEncrypted = store.isEncrypted();
+            const isUnlocked = store.isUnlocked();
+            // Lock option: show only if encrypted and unlocked
+            dropdownLock.style.display = (isEncrypted && isUnlocked) ? '' : 'none';
+            // Update password: always show in edit mode (users need it to SET a password)
+            if (dropdownUpdatePw) {
+                dropdownUpdatePw.style.display = '';
+            }
+        };
+
+        const closeDropdown = function () {
+            const dropdown = $('#dropdownMenu');
+            if (dropdown) {
+                dropdown.classList.remove('open');
+            }
         };
 
         const checkShareUrl = function () {
@@ -777,6 +875,7 @@
                     hideLockScreen();
                     startTicker();
                     await render();
+                    updateLockIcon();
                     const pending = sessionStorage.getItem('pendingShare');
                     if (pending) {
                         sessionStorage.removeItem('pendingShare');
@@ -900,7 +999,23 @@
             document.documentElement.setAttribute('data-theme', theme);
             const btn = $('#themeBtn');
             if (btn) {
-                btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+                btn.innerHTML = theme === 'dark' ? ICONS.sun : ICONS.moon;
+            }
+            const dropdownThemeBtn = $('#dropdownTheme');
+            if (dropdownThemeBtn && typeof dropdownThemeBtn.querySelector === 'function' && typeof dropdownThemeBtn.replaceChild === 'function') {
+                const svgEl = dropdownThemeBtn.querySelector('svg');
+                if (svgEl) {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = theme === 'dark' ? ICONS.sun : ICONS.moon;
+                    const newSvg = temp.querySelector('svg');
+                    if (newSvg) {
+                        dropdownThemeBtn.replaceChild(newSvg, svgEl);
+                    }
+                }
+            }
+            const dropdownThemeText = $('#dropdownThemeText');
+            if (dropdownThemeText) {
+                dropdownThemeText.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
             }
         };
 
@@ -934,6 +1049,7 @@
                 // Lock it
                 store.lock();
                 showLockScreen();
+                updateLockIcon();
             } else if (!store.isEncrypted()) {
                 // Open set-password dialog
                 openSetPassword();
@@ -942,25 +1058,23 @@
 
         const updateLockIcon = function () {
             const lockBtn = $('#lockBtn');
-            const updatePwBtn = $('#updatePwBtn');
-            if (!lockBtn || !updatePwBtn) {
-                return;
+            if (!lockBtn) { return; }
+            
+            // Update body class for CSS-based lock button visibility
+            if (typeof document !== 'undefined' && document.body) {
+                const isEncrypted = store.isEncrypted();
+                const isUnlocked = store.isUnlocked();
+                document.body.classList.toggle('vault-locked', isEncrypted && isUnlocked);
             }
-            if (!editing) {
-                // Not in edit mode: show lock button if encrypted
-                updatePwBtn.classList.add('hidden');
-                if (store.isEncrypted()) {
-                    lockBtn.classList.remove('hidden');
-                    lockBtn.textContent = '🔓';
-                    lockBtn.title = 'Lock accounts';
-                } else {
-                    lockBtn.classList.add('hidden');
-                }
-                return;
+            
+            // Also manage the hidden class on the lock button
+            const isEncrypted = store.isEncrypted();
+            const isUnlocked = store.isUnlocked();
+            if (isEncrypted && isUnlocked && !editing) {
+                lockBtn.classList.remove('hidden');
+            } else {
+                lockBtn.classList.add('hidden');
             }
-            // In edit mode: show update password button, hide lock button
-            updatePwBtn.classList.remove('hidden');
-            lockBtn.classList.add('hidden');
         };
 
         // Unlock modal
@@ -1093,6 +1207,101 @@
             for (let i = 0; i < cards.length; i++) {
                 cards[i].classList.remove('dragging', 'drag-over', 'touch-dragging', 'touch-drag-over');
             }
+        };
+
+        // ---- Swipe-to-reveal actions (mobile) ----
+        let swipeCard = null;
+        let swipeContent = null;
+        let swipeStartX = 0;
+        let swipeStartY = 0;
+        let swipeCurrentX = 0;
+        let swipeActive = false;
+        let swipeOpen = false;
+        const SWIPE_THRESHOLD = 40;
+        const SWIPE_MAX = 120;
+
+        const closeAllSwipes = function () {
+            const allContents = document.querySelectorAll('.card-content.swipe-open');
+            for (let i = 0; i < allContents.length; i++) {
+                allContents[i].classList.remove('swipe-open');
+            }
+            swipeOpen = false;
+            swipeCard = null;
+            swipeContent = null;
+        };
+
+        const onSwipeStart = function (e) {
+            if (editing) { return; } // drag handles in edit mode
+
+            const content = e.target.closest('.card-content');
+            if (!content) { return; }
+
+            const card = content.closest('.account-card');
+            if (!card) { return; }
+
+            // If another card is already swiped open, close it
+            if (swipeOpen && swipeCard !== card) {
+                closeAllSwipes();
+            }
+
+            swipeCard = card;
+            swipeContent = content;
+            swipeStartX = e.touches[0].clientX;
+            swipeStartY = e.touches[0].clientY;
+            swipeCurrentX = swipeStartX;
+            swipeActive = false;
+        };
+
+        const onSwipeMove = function (e) {
+            if (!swipeContent) { return; }
+
+            const touch = e.touches[0];
+            const dx = swipeStartX - touch.clientX;
+            const dy = Math.abs(touch.clientY - swipeStartY);
+
+            // Only activate if horizontal movement dominates
+            if (!swipeActive) {
+                if (dx < SWIPE_THRESHOLD / 2 && dy > 10) {
+                    // Vertical scroll, abort swipe
+                    swipeCard = null;
+                    swipeContent = null;
+                    return;
+                }
+                if (dx > SWIPE_THRESHOLD / 2) {
+                    swipeActive = true;
+                    swipeContent.classList.add('swiping');
+                } else {
+                    return;
+                }
+            }
+
+            e.preventDefault();
+            swipeCurrentX = touch.clientX;
+            const offset = Math.min(Math.max(0, swipeStartX - swipeCurrentX), SWIPE_MAX);
+            swipeContent.style.transform = 'translateX(-' + offset + 'px)';
+        };
+
+        const onSwipeEnd = function () {
+            if (!swipeContent) { return; }
+
+            const offset = swipeStartX - swipeCurrentX;
+
+            if (offset > SWIPE_THRESHOLD) {
+                // Open
+                swipeContent.classList.add('swipe-open');
+                swipeContent.style.transform = '';
+                swipeOpen = true;
+            } else {
+                // Close
+                swipeContent.classList.remove('swipe-open');
+                swipeContent.style.transform = '';
+                swipeOpen = false;
+            }
+
+            swipeContent.classList.remove('swiping');
+            swipeCard = null;
+            swipeContent = null;
+            swipeActive = false;
         };
 
         
@@ -1267,11 +1476,11 @@
                     : displayName;
 
                 let actionsHtml = '<div class="card-actions">';
-                actionsHtml += `<button class="qr-btn" data-idx="${i}" title="Show QR code"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg></button>`;
+                actionsHtml += `<button class="qr-btn" data-idx="${i}" title="Show QR code">${ICONS.qr}</button>`;
                 if (editing) {
-                    actionsHtml += '<button class="drag-handle" title="Drag to reorder">≡</button>';
-                    actionsHtml += `<button class="edit-btn" data-idx="${i}" title="Edit">&#x270E;</button>`;
-                    actionsHtml += `<button class="delete-btn" data-idx="${i}" title="Delete">&times;</button>`;
+                    actionsHtml += `<button class="drag-handle" title="Drag to reorder">${ICONS.drag}</button>`;
+                    actionsHtml += `<button class="edit-btn" data-idx="${i}" title="Edit">${ICONS.edit}</button>`;
+                    actionsHtml += `<button class="delete-btn" data-idx="${i}" title="Delete">${ICONS.delete}</button>`;
                 }
                 actionsHtml += '</div>';
 
@@ -1287,11 +1496,11 @@
                         '<span class="copy-tip">Copied!</span>' +
                         '</span>' +
                         '<button type="button" class="password-toggle" title="Show password" aria-label="Show password">' +
-                        '<svg class="pw-icon pw-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+                        '<svg class="pw-icon pw-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
                         '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
                         '<circle cx="12" cy="12" r="3"/>' +
                         '</svg>' +
-                        '<svg class="pw-icon pw-icon-hide hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+                        '<svg class="pw-icon pw-icon-hide hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
                         '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>' +
                         '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>' +
                         '<line x1="1" y1="1" x2="23" y2="23"/>' +
@@ -1304,16 +1513,20 @@
                 const urgentClass = cd <= 5 ? ' urgent' : '';
 
                 card.innerHTML =
+                    '<div class="card-content">' +
+                    '<div class="card-content-top">' +
                     '<div class="account-info">' +
                     '<div class="account-meta">' +
                     `<span class="account-name">${nameHtml}</span>` +
                     `<span class="meta-countdown${urgentClass}">${cd}s</span>` +
                     '</div>' +
-                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}"></div></div>` +
                     `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
                     pwRowHtml +
                     '</div>' +
-                    actionsHtml;
+                    actionsHtml +
+                    '</div>' +
+                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}"></div></div>` +
+                    '</div>';
 
                 const bar = card.querySelector('.countdown-bar-fill');
                 const nowMs = Date.now();
@@ -1392,16 +1605,11 @@
 
         const toggleEdit = function () {
             editing = !editing;
+            if (typeof document !== 'undefined' && document.body) {
+                document.body.classList.toggle('editing', editing);
+            }
             $('#editBtn').classList.toggle('active', editing);
-            $('#themeBtn').classList.toggle('hidden', !editing);
-            $('#lockBtn').classList.toggle('hidden', !editing);
-            $('#resetBtn').classList.toggle('hidden', !editing);
-            $('#reloadBtn').classList.toggle('hidden', !editing);
-            $('#importBtn').classList.toggle('hidden', !editing);
-            $('#exportBtn').classList.toggle('hidden', !editing);
-            $('#shareBtn').classList.toggle('hidden', !editing);
             $('#addRow').style.display = editing ? '' : 'none';
-            updateLockIcon();
             render();
         };
 
@@ -1465,7 +1673,7 @@
                 const text = ev.target.result;
                 let imported = 0;
                 try {
-                    let arr = JSON.parse(text);
+                    let arr = JSON.parse(stripJsonComments(text));
                     if (!Array.isArray(arr)) {
                         arr = [arr];
                     }
@@ -1543,12 +1751,12 @@
             }
             store.resetAll();
             editing = false;
+            if (typeof document !== 'undefined' && document.body) {
+                document.body.classList.remove('editing');
+            }
             $('#editBtn').classList.remove('active');
-            $('#resetBtn').classList.add('hidden');
-            $('#reloadBtn').classList.add('hidden');
-            $('#exportBtn').classList.add('hidden');
+            closeDropdown();
             $('#addRow').style.display = 'none';
-            updateLockIcon();
             render();
         };
 
@@ -1633,7 +1841,15 @@
             $('#keyDigits').value = acc.digits || DEFAULTS.digits;
             $('#keyPassword').value = acc.password || '';
             $('#keyPassword').type = 'password';
-            $('#toggleFormPw').textContent = '\uD83D\uDC41';
+            const toggleBtn = $('#toggleFormPw');
+            const iconShow = toggleBtn.querySelector('.pw-icon-show');
+            const iconHide = toggleBtn.querySelector('.pw-icon-hide');
+            if (iconShow) {
+                iconShow.classList.remove('hidden');
+            }
+            if (iconHide) {
+                iconHide.classList.add('hidden');
+            }
             $('#addModal').classList.add('open');
         };
 
@@ -1689,18 +1905,38 @@
             $('#keyDigits').value = DEFAULTS.digits;
             $('#keyPassword').value = '';
             $('#keyPassword').type = 'password';
-            $('#toggleFormPw').textContent = '\uD83D\uDC41';
+            const toggleBtn = $('#toggleFormPw');
+            const iconShow = toggleBtn.querySelector('.pw-icon-show');
+            const iconHide = toggleBtn.querySelector('.pw-icon-hide');
+            if (iconShow) {
+                iconShow.classList.remove('hidden');
+            }
+            if (iconHide) {
+                iconHide.classList.add('hidden');
+            }
         };
 
         const toggleFormPassword = function () {
             const pwInput = $('#keyPassword');
             const toggleBtn = $('#toggleFormPw');
+            const iconShow = toggleBtn.querySelector('.pw-icon-show');
+            const iconHide = toggleBtn.querySelector('.pw-icon-hide');
             if (pwInput.type === 'password') {
                 pwInput.type = 'text';
-                toggleBtn.textContent = '\uD83D\uDDD8';
+                if (iconShow) {
+                    iconShow.classList.add('hidden');
+                }
+                if (iconHide) {
+                    iconHide.classList.remove('hidden');
+                }
             } else {
                 pwInput.type = 'password';
-                toggleBtn.textContent = '\uD83D\uDC41';
+                if (iconShow) {
+                    iconShow.classList.remove('hidden');
+                }
+                if (iconHide) {
+                    iconHide.classList.add('hidden');
+                }
             }
         };
 

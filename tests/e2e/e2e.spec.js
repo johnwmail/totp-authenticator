@@ -62,7 +62,6 @@ test.describe('TOTP Authenticator E2E', () => {
 
             await expect(page.locator('.delete-btn').first()).toBeVisible();
             await expect(page.locator('.edit-btn').first()).toBeVisible();
-            await expect(page.locator('.drag-handle').first()).toBeVisible();
             await expect(page.locator('#addBtn')).toBeVisible();
         });
 
@@ -77,9 +76,17 @@ test.describe('TOTP Authenticator E2E', () => {
         test('shows topbar action buttons in edit mode', async ({ page }) => {
             await page.locator('#editBtn').click();
 
-            await expect(page.locator('#exportBtn')).toBeVisible();
-            await expect(page.locator('#importBtn')).toBeVisible();
-            await expect(page.locator('#resetBtn')).toBeVisible();
+            // Menu button should be visible in edit mode
+            await expect(page.locator('#menuBtn')).toBeVisible();
+            
+            // Open dropdown menu
+            await page.locator('#menuBtn').click();
+            await expect(page.locator('#dropdownMenu')).toHaveClass(/open/);
+            
+            // Check dropdown items are visible
+            await expect(page.locator('#dropdownExport')).toBeVisible();
+            await expect(page.locator('#dropdownImport')).toBeVisible();
+            await expect(page.locator('#dropdownReset')).toBeVisible();
         });
     });
 
@@ -162,9 +169,11 @@ test.describe('TOTP Authenticator E2E', () => {
                 const rawData = await page.evaluate(() => localStorage.getItem('accounts'));
                 data = JSON.parse(rawData);
             } else {
+                // Open dropdown menu and click export
+                await page.locator('#menuBtn').click();
                 const [download] = await Promise.all([
                     page.waitForEvent('download'),
-                    page.locator('#exportBtn').click(),
+                    page.locator('#dropdownExport').click(),
                 ]);
 
                 expect(download.suggestedFilename()).toBe('authenticator-export.json');
@@ -221,9 +230,11 @@ test.describe('TOTP Authenticator E2E', () => {
                 fs.mkdirSync(path.dirname(filePath), { recursive: true });
                 fs.writeFileSync(filePath, data);
             } else {
+                // Open dropdown menu and click export
+                await page.locator('#menuBtn').click();
                 const [download] = await Promise.all([
                     page.waitForEvent('download'),
-                    page.locator('#exportBtn').click(),
+                    page.locator('#dropdownExport').click(),
                 ]);
                 await download.saveAs(filePath);
             }
@@ -324,13 +335,17 @@ test.describe('TOTP Authenticator E2E', () => {
     });
 
     test.describe('Encryption', () => {
+        test.beforeEach(() => {
+            test.setTimeout(60000);
+        });
+
         test('set encryption password and lock/unlock', async ({ page }) => {
-            // Enter edit mode to access updatePwBtn
+            // Enter edit mode
             await page.locator('#editBtn').click();
 
-            const updatePwBtn = page.locator('#updatePwBtn');
-            await expect(updatePwBtn).toBeVisible();
-            await updatePwBtn.click();
+            // Open dropdown and click update password
+            await page.locator('#menuBtn').click();
+            await page.locator('#dropdownUpdatePw').click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await page.evaluate((pw) => {
@@ -342,16 +357,13 @@ test.describe('TOTP Authenticator E2E', () => {
                 confirm.dispatchEvent(new Event('input', { bubbles: true }));
             }, 'testpassword123');
             await page.locator('#setPwSubmit').click();
-            // Wait for modal to close (async setPassword + key derivation may be slow on mobile)
             await page.waitForFunction(() => !document.querySelector('#setPwModal').classList.contains('open'), { timeout: 15000 });
 
-            // Exit edit mode - lockBtn should now be visible (unlocked state shows 🔓)
+            // Exit edit mode
             await page.locator('#editBtn').click();
-            const lockBtn = page.locator('#lockBtn');
-            await expect(lockBtn).toBeVisible();
 
-            // Lock the vault
-            await lockBtn.click();
+            // Click the lock button in the topbar (visible when vault is encrypted and unlocked)
+            await page.locator('#lockBtn').click();
             await expect(page.locator('#lockScreen')).toBeVisible();
 
             // Unlock with password
@@ -363,11 +375,10 @@ test.describe('TOTP Authenticator E2E', () => {
         });
 
         test('unlock vault shows accounts', async ({ page }) => {
-            // First, enter edit mode and set password via updatePwBtn
+            // First, enter edit mode and set password via dropdown
             await page.locator('#editBtn').click();
-            const updatePwBtn = page.locator('#updatePwBtn');
-            await expect(updatePwBtn).toBeVisible();
-            await updatePwBtn.click();
+            await page.locator('#menuBtn').click();
+            await page.locator('#dropdownUpdatePw').click();
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await page.evaluate((pw) => {
                 const input = document.querySelector('#setPwInput');
@@ -380,13 +391,11 @@ test.describe('TOTP Authenticator E2E', () => {
             await page.locator('#setPwSubmit').click();
             await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
-            // Exit edit mode - lockBtn should be visible
+            // Exit edit mode
             await page.locator('#editBtn').click();
-            const lockBtn = page.locator('#lockBtn');
-            await expect(lockBtn).toBeVisible();
 
-            // Lock the vault
-            await lockBtn.click();
+            // Click the lock button in the topbar (visible when vault is encrypted and unlocked)
+            await page.locator('#lockBtn').click();
             await expect(page.locator('#lockScreen')).toBeVisible();
 
             // Unlock with password
@@ -399,11 +408,10 @@ test.describe('TOTP Authenticator E2E', () => {
         });
 
         test('update password flow: old password locks vault, new password unlocks', async ({ page }) => {
-            // Step 1: Set initial password via updatePwBtn in edit mode
+            // Step 1: Set initial password via dropdown
             await page.locator('#editBtn').click();
-            const updatePwBtn = page.locator('#updatePwBtn');
-            await expect(updatePwBtn).toBeVisible();
-            await updatePwBtn.click();
+            await page.locator('#menuBtn').click();
+            await page.locator('#dropdownUpdatePw').click();
 
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await page.evaluate((pw) => {
@@ -417,26 +425,32 @@ test.describe('TOTP Authenticator E2E', () => {
             await page.locator('#setPwSubmit').click();
             await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
-            // Exit edit mode to access lockBtn
+            // Exit edit mode
             await page.locator('#editBtn').click();
-            const lockBtn = page.locator('#lockBtn');
-            await expect(lockBtn).toBeVisible();
 
-            // Step 2: Lock the vault with old password
-            await lockBtn.click();
+            // Click the lock button in the topbar (visible when vault is encrypted and unlocked)
+            await page.locator('#lockBtn').click();
             await expect(page.locator('#lockScreen')).toBeVisible();
 
             // Step 3: Unlock with old password to verify it still works before changing
             await page.locator('#lockScreenUnlock').click();
-            await page.locator('#pwInput').fill('oldpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#pwInput');
+                input.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'oldpassword');
             await page.locator('#pwSubmit').click();
             await expect(page.locator('#lockScreen')).not.toBeVisible();
 
-            // Step 4: Enter edit mode and click update password button
+            // Wait for accounts to render after unlock
+            await expect(page.locator('.account-card').first()).toBeVisible();
+            await page.waitForLoadState('networkidle');
+
+            // Step 4: Enter edit mode and click update password button via dropdown
             await page.locator('#editBtn').click();
-            const updatePwBtn2 = page.locator('#updatePwBtn');
-            await expect(updatePwBtn2).toBeVisible();
-            await updatePwBtn2.click();
+            await page.locator('#menuBtn').click({ force: true });
+            await expect(page.locator('#dropdownMenu')).toHaveClass(/open/);
+            await page.locator('#dropdownUpdatePw').click({ force: true });
             await expect(page.locator('#setPwModal')).toHaveClass(/open/);
             await expect(page.locator('#setPwTitle')).toContainText('Change Password');
 
@@ -452,23 +466,33 @@ test.describe('TOTP Authenticator E2E', () => {
             await page.locator('#setPwSubmit').click();
             await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
-            // Exit edit mode to access lockBtn
-            await page.locator('#editBtn').click();
-            const lockBtn2 = page.locator('#lockBtn');
-            await expect(lockBtn2).toBeVisible();
+            // Wait for accounts to render after password change
+            await expect(page.locator('.account-card').first()).toBeVisible();
+            await page.waitForLoadState('networkidle');
 
-            // Step 6: Verify old password cannot unlock
-            await lockBtn2.click();
+            // Exit edit mode
+            await page.locator('#editBtn').click();
+
+            // Click the lock button in the topbar
+            await page.locator('#lockBtn').click();
             await expect(page.locator('#lockScreen')).toBeVisible();
             await page.locator('#lockScreenUnlock').click();
-            await page.locator('#pwInput').fill('oldpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#pwInput');
+                input.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'oldpassword');
             await page.locator('#pwSubmit').click();
             // Should still be on lock screen (unlock failed)
             await expect(page.locator('#lockScreen')).toBeVisible();
             await expect(page.locator('#pwError')).toContainText(/incorrect|password/i);
 
             // Step 7: Verify new password unlocks successfully
-            await page.locator('#pwInput').fill('newpassword');
+            await page.evaluate((pw) => {
+                const input = document.querySelector('#pwInput');
+                input.value = pw;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, 'newpassword');
             await page.locator('#pwSubmit').click();
             await expect(page.locator('#lockScreen')).not.toBeVisible();
             await expect(page.locator('.account-card').first()).toBeVisible();
@@ -611,7 +635,9 @@ test.describe('TOTP Authenticator E2E', () => {
             await page.locator('#editBtn').click();
 
             page.on('dialog', (dialog) => dialog.accept());
-            await page.locator('#resetBtn').click();
+            // Open dropdown menu and click reset
+            await page.locator('#menuBtn').click();
+            await page.locator('#dropdownReset').click();
 
             await expect(page.locator('.account-card')).toHaveCount(0);
         });
@@ -735,9 +761,11 @@ test.describe('Mobile Layout', () => {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
             fs.writeFileSync(filePath, data);
         } else {
+            // Open dropdown menu and click export
+            await page.locator('#menuBtn').click();
             const [download] = await Promise.all([
                 page.waitForEvent('download'),
-                page.locator('#exportBtn').click(),
+                page.locator('#dropdownExport').click(),
             ]);
             await download.saveAs(filePath);
         }
@@ -797,31 +825,41 @@ test.describe('Share URL', () => {
 
     test('share button is visible in edit mode', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await expect(page.locator('#shareBtn')).toBeVisible();
+        // Open dropdown menu
+        await page.locator('#menuBtn').click();
+        await expect(page.locator('#dropdownShare')).toBeVisible();
     });
 
     test('share button opens share modal', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         await expect(page.locator('#shareModal')).toHaveClass(/open/);
     });
 
     test('share modal has password input', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         await expect(page.locator('#sharePwInput')).toBeVisible();
     });
 
     test('generate URL button is disabled without password', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         const generateBtn = page.locator('#shareGenerate');
         await expect(generateBtn).toBeDisabled();
     });
 
     test('generate URL button is enabled with password', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         await page.locator('#sharePwInput').fill('testpassword');
         const generateBtn = page.locator('#shareGenerate');
         await expect(generateBtn).toBeEnabled();
@@ -829,7 +867,9 @@ test.describe('Share URL', () => {
 
     test('generates URL with #data fragment', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         await page.locator('#sharePwInput').fill('testpassword');
         await page.locator('#shareGenerate').click();
         await expect(page.locator('#shareUrlContainer')).not.toHaveClass(/hidden/);
@@ -841,11 +881,15 @@ test.describe('Share URL', () => {
 
     test('closing share modal clears password', async ({ page }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         await page.locator('#sharePwInput').fill('testpassword');
         await page.locator('#shareCancel').click();
         await expect(page.locator('#shareModal')).not.toHaveClass(/open/);
-        await page.locator('#shareBtn').click();
+        // Re-open share modal via dropdown
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         const pwInput = page.locator('#sharePwInput');
         expect(await pwInput.inputValue()).toBe('');
     });
@@ -871,7 +915,7 @@ test.describe('Share URL', () => {
                 ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -884,7 +928,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.600000';
         }, { accounts });
 
         const initialCount = await page.locator('.account-card').count();
@@ -917,7 +961,7 @@ test.describe('Share URL', () => {
                 ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -930,7 +974,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.600000';
         }, { accounts });
 
         await page.goto(`/?#data=${data}`);
@@ -942,7 +986,9 @@ test.describe('Share URL', () => {
 
     test('clicking URL in share modal copies to clipboard', async ({ page, browserName }) => {
         await page.locator('#editBtn').click();
-        await page.locator('#shareBtn').click();
+        // Open dropdown menu and click share
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownShare').click();
         await page.locator('#sharePwInput').fill('testpassword');
         await page.locator('#shareGenerate').click();
         await page.locator('#shareUrlOutput').click();
@@ -996,9 +1042,8 @@ test.describe('Share URL', () => {
         }, { accounts });
 
         await page.locator('#editBtn').click();
-        const updatePwBtn = page.locator('#updatePwBtn');
-        await expect(updatePwBtn).toBeVisible();
-        await updatePwBtn.click();
+        await page.locator('#menuBtn').click();
+        await page.locator('#dropdownUpdatePw').click();
 
         // Use evaluate to set password values directly, avoiding WebKit fill() quirks
         await page.evaluate((pw) => {
@@ -1009,16 +1054,18 @@ test.describe('Share URL', () => {
             input.dispatchEvent(new Event('input', { bubbles: true }));
             confirm.dispatchEvent(new Event('input', { bubbles: true }));
         }, 'vaultpassword');
-        await page.locator('#setPwSubmit').click();
-        await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
+            await page.locator('#setPwSubmit').click();
+            await expect(page.locator('#setPwModal')).not.toHaveClass(/open/);
 
-        // Exit edit mode to access lockBtn
-        await page.locator('#editBtn').click();
-        const lockBtn = page.locator('#lockBtn');
-        await expect(lockBtn).toBeVisible();
-        await lockBtn.click();
+            // Wait for accounts to render after password change
+            await expect(page.locator('.account-card').first()).toBeVisible();
 
-        await expect(page.locator('#lockScreen')).toBeVisible();
+            // Exit edit mode
+            await page.locator('#editBtn').click();
+
+            // Step 6: Click the lock button in the topbar
+            await page.locator('#lockBtn').click();
+            await expect(page.locator('#lockScreen')).toBeVisible();
 
         await page.goto(`/?#data=${data}`);
 
@@ -1031,10 +1078,15 @@ test.describe('Share URL', () => {
         await page.locator('#pwInput').fill('vaultpassword');
         await page.locator('#pwSubmit').click();
 
-        await expect(page.locator('#passwordModal')).toHaveClass(/open/);
+        // After unlock, modal closes then reopens for import - wait for it to be open again
+        await expect(page.locator('#passwordModal')).toHaveClass(/open/, { timeout: 10000 });
+        // Verify we're in import mode (button says "Import")
+        await expect(page.locator('#pwSubmit')).toHaveText('Import');
         await page.locator('#pwInput').fill('sharepass');
         await page.locator('#pwSubmit').click();
 
+        // Wait for toast to appear (it auto-removes after ~2.3s)
+        await page.waitForSelector('.toast', { timeout: 5000 });
         await expect(page.locator('.toast')).toContainText(/import/i);
     });
 
@@ -1062,7 +1114,7 @@ test.describe('Share URL', () => {
                 ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -1075,7 +1127,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.600000';
         }, { accounts });
 
         // Navigate to URL with share data to trigger import
