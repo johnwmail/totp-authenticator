@@ -31,7 +31,6 @@ module.exports = defineConfig({
         {
             name: 'mobile-safari',
             use: { ...devices['iPhone 13'] },
-            fullyParallel: false,
         },
     ],
 });

@@ -335,6 +335,10 @@ test.describe('TOTP Authenticator E2E', () => {
     });
 
     test.describe('Encryption', () => {
+        test.beforeEach(() => {
+            test.setTimeout(60000);
+        });
+
         test('set encryption password and lock/unlock', async ({ page }) => {
             // Enter edit mode
             await page.locator('#editBtn').click();
@@ -464,6 +468,7 @@ test.describe('TOTP Authenticator E2E', () => {
 
             // Wait for accounts to render after password change
             await expect(page.locator('.account-card').first()).toBeVisible();
+            await page.waitForLoadState('networkidle');
 
             // Exit edit mode
             await page.locator('#editBtn').click();
@@ -910,7 +915,7 @@ test.describe('Share URL', () => {
                 ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -923,7 +928,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.600000';
         }, { accounts });
 
         const initialCount = await page.locator('.account-card').count();
@@ -956,7 +961,7 @@ test.describe('Share URL', () => {
                 ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -969,7 +974,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.600000';
         }, { accounts });
 
         await page.goto(`/?#data=${data}`);
@@ -1109,7 +1114,7 @@ test.describe('Share URL', () => {
                 ['deriveKey']
             );
             const key = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 baseKey,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -1122,7 +1127,7 @@ test.describe('Share URL', () => {
             );
 
             const bufToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.310000';
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.600000';
         }, { accounts });
 
         // Navigate to URL with share data to trigger import
