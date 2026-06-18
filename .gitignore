@@ -13,3 +13,6 @@ tests/tmp/
 # OS
 .DS_Store
 Thumbs.db
+
+# Extension build output
+extension/dist/

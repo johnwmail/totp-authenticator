@@ -1,0 +1,1747 @@
+// Authenticator — per-account TOTP with configurable algorithm/period/digits
+// Uses native Web Crypto API (no external dependencies for crypto)
+/* eslint-disable no-use-before-define */
+/* global LZString */
+
+(function (exports) {
+    'use strict';
+
+    const DEFAULTS = {
+        algorithm: 'SHA-1',
+        period: 30,
+        digits: 6
+    };
+
+    function escapeHtml(str) {
+        if (!str) {
+            return '';
+        }
+        return String(str).replace(/[&<>"']/g, c => {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c];
+        });
+    }
+
+    // ---- Storage with optional AES-GCM encryption ----
+    const StorageService = function () {
+        const KEYS = {
+            plain: 'accounts',
+            encrypted: 'accounts_encrypted',
+            meta: 'accounts_meta'
+        };
+        let aesKey = null; // derived CryptoKey when unlocked
+
+        function isSupported() {
+            return typeof Storage !== 'undefined';
+        }
+
+        function getPlain(k) {
+            const v = localStorage.getItem(k);
+            return v && JSON.parse(v);
+        }
+        function setPlain(k, v) {
+            localStorage.setItem(k, JSON.stringify(v));
+        }
+
+        function isEncrypted() {
+            return !!localStorage.getItem(KEYS.meta);
+        }
+        function isUnlocked() {
+            return !!aesKey;
+        }
+
+        function randomBytes(n) {
+            const b = new Uint8Array(n);
+            crypto.getRandomValues(b);
+            return b;
+        }
+        function bufToBase64(buf) {
+            return btoa(String.fromCharCode(...new Uint8Array(buf)));
+        }
+        function base64ToBuf(b64) {
+            const s = atob(b64);
+            const b = new Uint8Array(s.length);
+            for (let i = 0; i < s.length; i++) {
+                b[i] = s.charCodeAt(i);
+            }
+            return b;
+        }
+
+        async function deriveKey(password, salt, iterations) {
+            iterations = iterations || 310000;
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                enc.encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function encrypt(data, key) {
+            const iv = randomBytes(12);
+            const enc = new TextEncoder();
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(JSON.stringify(data))
+            );
+            return { iv: bufToBase64(iv), ct: bufToBase64(ct) };
+        }
+
+        async function decrypt(payload, key) {
+            const iv = base64ToBuf(payload.iv);
+            const ct = base64ToBuf(payload.ct);
+            const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+            return JSON.parse(new TextDecoder().decode(plain));
+        }
+
+        async function compressAndEncrypt(data, password) {
+            const jsonStr = JSON.stringify(data);
+            const compressed = LZString.compressToUTF16(jsonStr);
+            const salt = randomBytes(16);
+            const iterations = 310000;
+            const key = await deriveKey(password, salt, iterations);
+            const iv = randomBytes(12);
+            const enc = new TextEncoder();
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(compressed)
+            );
+            return bufToBase64(ct) + '.' + bufToBase64(iv) + '.' + bufToBase64(salt) + '.' + iterations;
+        }
+
+        async function decompressAndDecrypt(data, password) {
+            const parts = data.split('.');
+            if (parts.length !== 4) {
+                throw new Error('Invalid share data format');
+            }
+            const ct = base64ToBuf(parts[0]);
+            const iv = base64ToBuf(parts[1]);
+            const salt = base64ToBuf(parts[2]);
+            const iterations = parseInt(parts[3], 10);
+            const key = await deriveKey(password, salt, iterations);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+            const dec = new TextDecoder();
+            const compressed = dec.decode(decrypted);
+            const jsonStr = LZString.decompressFromUTF16(compressed);
+            if (!jsonStr) {
+                throw new Error('Failed to decompress data');
+            }
+            return JSON.parse(jsonStr);
+        }
+
+        async function setPassword(password) {
+            const accounts = await getAccounts();
+            if (accounts === null) {
+                throw new Error('Vault is locked. Unlock before changing password.');
+            }
+            if (!password) {
+                // Remove encryption
+                aesKey = null;
+                localStorage.removeItem(KEYS.encrypted);
+                localStorage.removeItem(KEYS.meta);
+                setPlain(KEYS.plain, accounts);
+                return;
+            }
+            const salt = randomBytes(16);
+            const iterations = 310000;
+            aesKey = await deriveKey(password, salt, iterations);
+            const meta = { salt: bufToBase64(salt), iter: iterations };
+            localStorage.setItem(KEYS.meta, JSON.stringify(meta));
+            localStorage.removeItem(KEYS.plain);
+            const payload = await encrypt(accounts, aesKey);
+            localStorage.setItem(KEYS.encrypted, JSON.stringify(payload));
+        }
+
+        async function unlock(password) {
+            const metaStr = localStorage.getItem(KEYS.meta);
+            if (!metaStr) {
+                return true;
+            } // not encrypted
+            const meta = JSON.parse(metaStr);
+            const salt = base64ToBuf(meta.salt);
+            try {
+                const key = await deriveKey(password, salt, meta.iter);
+                const payloadStr = localStorage.getItem(KEYS.encrypted);
+                if (!payloadStr) {
+                    aesKey = key;
+                    return true;
+                }
+                await decrypt(JSON.parse(payloadStr), key); // test decrypt
+                aesKey = key;
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function lock() {
+            aesKey = null;
+        }
+
+        async function getAccounts() {
+            if (isEncrypted()) {
+                if (!aesKey) {
+                    return null;
+                } // locked
+                const payloadStr = localStorage.getItem(KEYS.encrypted);
+                if (!payloadStr) {
+                    return [];
+                }
+                try {
+                    return await decrypt(JSON.parse(payloadStr), aesKey);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return getPlain(KEYS.plain) || [];
+        }
+
+        async function saveAccounts(accounts) {
+            if (isEncrypted() && aesKey) {
+                const payload = await encrypt(accounts, aesKey);
+                localStorage.setItem(KEYS.encrypted, JSON.stringify(payload));
+                localStorage.removeItem(KEYS.plain);
+            } else {
+                setPlain(KEYS.plain, accounts);
+            }
+        }
+
+        function resetAll() {
+            localStorage.removeItem(KEYS.plain);
+            localStorage.removeItem(KEYS.encrypted);
+            localStorage.removeItem(KEYS.meta);
+            aesKey = null;
+        }
+
+        function hasAnyData() {
+            return !!(localStorage.getItem(KEYS.plain) || localStorage.getItem(KEYS.encrypted));
+        }
+
+        return {
+            isSupported: isSupported,
+            isEncrypted: isEncrypted,
+            isUnlocked: isUnlocked,
+            setPassword: setPassword,
+            unlock: unlock,
+            lock: lock,
+            getAccounts: getAccounts,
+            saveAccounts: saveAccounts,
+            resetAll: resetAll,
+            hasAnyData: hasAnyData,
+            compressAndEncrypt: compressAndEncrypt,
+            decompressAndDecrypt: decompressAndDecrypt,
+            // Legacy compat
+            getObject: getPlain,
+            setObject: setPlain
+        };
+    };
+
+    // ---- TOTP (native Web Crypto API) ----
+    const KeyUtilities = function () {
+        const dec2hex = function (s) {
+            return (s < 15.5 ? '0' : '') + Math.round(s).toString(16);
+        };
+        const hex2dec = function (s) {
+            return parseInt(s, 16);
+        };
+        const leftpad = function (str, len, pad) {
+            if (len + 1 >= str.length) {
+                str = new Array(len + 1 - str.length).join(pad) + str;
+            }
+            return str;
+        };
+        const base32tohex = function (b32) {
+            const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            let bits = '';
+            let hex = '';
+            for (let i = 0; i < b32.length; i++) {
+                const v = c.indexOf(b32.charAt(i).toUpperCase());
+                if (v >= 0) {
+                    bits += leftpad(v.toString(2), 5, '0');
+                }
+            }
+            for (let j = 0; j + 4 <= bits.length; j += 4) {
+                hex += parseInt(bits.substring(j, j + 4), 2).toString(16);
+            }
+            return hex;
+        };
+        const hexToUint8Array = function (hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+            }
+            return bytes;
+        };
+
+        return {
+            generate: async function (secret, opts) {
+                opts = opts || {};
+                const algo = opts.algorithm || DEFAULTS.algorithm;
+                const period = opts.period || DEFAULTS.period;
+                const digits = opts.digits || DEFAULTS.digits;
+                let key = base32tohex(secret);
+                if (key.length % 2 !== 0) {
+                    key += '0';
+                }
+                const epoch = opts.epoch || Math.round(Date.now() / 1000);
+                const time = leftpad(dec2hex(Math.floor(epoch / period)), 16, '0');
+
+                const keyBytes = hexToUint8Array(key);
+                const timeBytes = hexToUint8Array(time);
+
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    keyBytes,
+                    { name: 'HMAC', hash: { name: algo } },
+                    false,
+                    ['sign']
+                );
+                const sig = await crypto.subtle.sign('HMAC', cryptoKey, timeBytes);
+                const hmacBytes = new Uint8Array(sig);
+
+                let hmac = '';
+                for (let i = 0; i < hmacBytes.length; i++) {
+                    hmac += ('0' + hmacBytes[i].toString(16)).slice(-2);
+                }
+
+                const off = hex2dec(hmac.substring(hmac.length - 1));
+                const otp =
+                    (hex2dec(hmac.substring(off * 2, off * 2 + 8)) & hex2dec('7fffffff')) + '';
+                return leftpad(otp.substring(otp.length - digits), digits, '0');
+            }
+        };
+    };
+
+    // ---- Helpers ----
+
+    function generateRandomSecret(length) {
+        length = length || 32;
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        const arr = new Uint8Array(length);
+        crypto.getRandomValues(arr);
+        let secret = '';
+        for (let i = 0; i < length; i++) {
+            secret += chars[arr[i] % 32];
+        }
+        return secret;
+    }
+
+    let clipboardClearTimer = null;
+    let lastCopiedValue = null;
+
+    function copyToClipboard(text, el) {
+        navigator.clipboard.writeText(text).then(() => {
+            el.classList.add('copied');
+            setTimeout(() => {
+                el.classList.remove('copied');
+            }, 1200);
+            lastCopiedValue = text;
+            if (clipboardClearTimer) {
+                clearTimeout(clipboardClearTimer);
+            }
+            // Clear clipboard after 30 seconds for security (only if value is unchanged)
+            clipboardClearTimer = setTimeout(() => {
+                if (!navigator.clipboard.readText) {
+                    showToast('Clipboard auto-clear unavailable');
+                    return;
+                }
+                navigator.clipboard
+                    .readText()
+                    .then(currentValue => {
+                        if (currentValue === lastCopiedValue) {
+                            navigator.clipboard
+                                .writeText('')
+                                .then(() => {
+                                    showToast('Clipboard cleared');
+                                })
+                                .catch(() => {
+                                    showToast('Clipboard clear attempted');
+                                });
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Clipboard auto-clear unavailable');
+                    });
+            }, 30000);
+        });
+    }
+
+    function showToast(message) {
+        // Remove existing toast if any
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        // Trigger reflow for animation
+        void toast.offsetWidth;
+        toast.classList.add('show');
+        // Auto-remove after 2 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 2000);
+    }
+
+    // Parse otpauth:// URI
+    function parseOtpauth(uri) {
+        uri = uri.trim();
+        if (uri.indexOf('otpauth://') !== 0) {
+            return null;
+        }
+        try {
+            const url = new URL(uri);
+            const path = decodeURIComponent(url.pathname);
+            let name = path
+                .replace(/^\/totp\//, '')
+                .replace(/^\/hotp\//, '')
+                .replace(/^\//, '');
+            const issuer = url.searchParams.get('issuer');
+            if (issuer && name.indexOf(issuer + ':') === 0) {
+                name = `${issuer} (${name.substring(issuer.length + 1).trim()})`;
+            } else if (issuer && issuer !== name && name.indexOf(':') === -1) {
+                name = `${issuer} (${name})`;
+            }
+            const secret = (url.searchParams.get('secret') || '').toUpperCase().replace(/\s/g, '');
+            const algoParam = (url.searchParams.get('algorithm') || '')
+                .toUpperCase()
+                .replace('-', '');
+            let algorithm = DEFAULTS.algorithm;
+            if (algoParam === 'SHA1') {
+                algorithm = 'SHA-1';
+            }
+            if (algoParam === 'SHA256') {
+                algorithm = 'SHA-256';
+            }
+            if (algoParam === 'SHA512') {
+                algorithm = 'SHA-512';
+            }
+            const period = parseInt(url.searchParams.get('period'), 10) || DEFAULTS.period;
+            const digits = parseInt(url.searchParams.get('digits'), 10) || DEFAULTS.digits;
+            return {
+                name: name,
+                secret: secret,
+                algorithm: algorithm,
+                period: period,
+                digits: digits,
+                issuer: issuer || ''
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    exports.parseOtpauth = parseOtpauth;
+
+    function looksLikeHtmlDocument(text) {
+        return /^\s*<(?:!doctype|html)\b/i.test(text);
+    }
+
+    // ---- Controller ----
+    const KeysController = function () {
+        let store,
+            keys,
+            editing = false;
+        let editIndex = -1;
+        let renderToken = 0;
+        let tickTimer = null;
+        let barAnimFrame = null;
+        let lastRenderedAt = 0;
+        let lastCodeStepByIndex = {};
+
+        const $ = function (sel) {
+            return document.querySelector(sel);
+        };
+
+        const startTicker = function () {
+            if (tickTimer) {
+                clearInterval(tickTimer);
+            }
+            tickTimer = setInterval(tick, 1000);
+            startBarAnimation();
+        };
+
+        const stopTicker = function () {
+            if (tickTimer) {
+                clearInterval(tickTimer);
+            }
+            tickTimer = null;
+            stopBarAnimation();
+        };
+
+        const updateProgressBars = function () {
+            if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') {
+                return;
+            }
+            const bars = document.querySelectorAll('.countdown-bar-fill');
+
+            for (let i = 0; i < bars.length; i++) {
+                const card = bars[i].closest('.account-card');
+                if (!card) { continue; }
+                const period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
+                const nowMs = Date.now();
+                const periodMs = period * 1000;
+                const remainingMs = periodMs - (nowMs % periodMs);
+                const pct = Math.max(0, remainingMs / periodMs);
+                const urgent = remainingMs <= 5000;
+                bars[i].style.transform = 'scaleX(' + pct + ')';
+                bars[i].classList.toggle('urgent', urgent);
+            }
+
+            barAnimFrame = typeof requestAnimationFrame === 'function'
+                ? requestAnimationFrame(updateProgressBars)
+                : setTimeout(updateProgressBars, 16);
+        };
+
+        const stopBarAnimation = function () {
+            if (barAnimFrame) {
+                if (typeof cancelAnimationFrame === 'function') {
+                    cancelAnimationFrame(barAnimFrame);
+                } else {
+                    clearTimeout(barAnimFrame);
+                }
+                barAnimFrame = null;
+            }
+        };
+
+        const startBarAnimation = function () {
+            if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') {
+                return;
+            }
+            if (typeof requestAnimationFrame !== 'function' && typeof setTimeout !== 'function') {
+                return;
+            }
+            stopBarAnimation();
+            updateProgressBars();
+        };
+
+        const addFallbackAccount = async function () {
+            const accounts = await store.getAccounts();
+            if (accounts === null || accounts.length > 0) {
+                return;
+            }
+            await store.saveAccounts([
+                {
+                    name: 'demo@example.com',
+                    secret: generateRandomSecret(),
+                    algorithm: DEFAULTS.algorithm,
+                    period: DEFAULTS.period,
+                    digits: DEFAULTS.digits,
+                    url: 'https://github.com',
+                    issuer: 'Github',
+                    password: 'demo123'
+                }
+            ]);
+            await render();
+        };
+
+        const stripJsonComments = function (text) {
+            return text.replace(/^\s*\/\/.*$/gm, '').replace(/^\s*#.*$/gm, '');
+        };
+
+        const loadDefaultAccounts = async function () {
+            try {
+                let existing = await store.getAccounts();
+                if (existing === null || existing.length > 0) {
+                    return;
+                }
+
+                if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                    await addFallbackAccount();
+                    return;
+                }
+
+                const res = await fetch('accounts.json');
+                if (!res.ok) {
+                    throw new Error('not found');
+                }
+
+                const text = await res.text();
+                if (looksLikeHtmlDocument(text)) {
+                    throw new Error('not json');
+                }
+                const arr = JSON.parse(stripJsonComments(text));
+                if (!arr || !Array.isArray(arr) || arr.length === 0) {
+                    throw new Error('empty');
+                }
+
+                const imported = [];
+                for (let i = 0; i < arr.length; i++) {
+                    const item = arr[i];
+                    if (item.secret) {
+                        imported.push({
+                            name: item.name || 'Imported',
+                            secret: item.secret,
+                            algorithm: item.algorithm || DEFAULTS.algorithm,
+                            period: item.period || DEFAULTS.period,
+                            digits: item.digits || DEFAULTS.digits,
+                            url: item.url || '',
+                            issuer: item.issuer || '',
+                            password: item.password || ''
+                        });
+                    } else if (item.otpauth) {
+                        const parsed = parseOtpauth(item.otpauth);
+                        if (parsed) {
+                            imported.push({
+                                name: parsed.name,
+                                secret: parsed.secret,
+                                algorithm: parsed.algorithm,
+                                period: parsed.period,
+                                digits: parsed.digits,
+                                url: '',
+                                issuer: parsed.issuer
+                            });
+                        }
+                    }
+                }
+
+                if (imported.length === 0) {
+                    await addFallbackAccount();
+                    return;
+                }
+
+                existing = await store.getAccounts();
+                if (existing === null || existing.length > 0) {
+                    return;
+                }
+                await store.saveAccounts(imported);
+                await render();
+            } catch (e) {
+                await addFallbackAccount();
+            }
+        };
+
+        const init = async function () {
+            store = new StorageService();
+            keys = new KeyUtilities();
+
+            if (!store.isSupported()) {
+                return;
+            }
+
+            // Bind UI
+            $('#editBtn').addEventListener('click', toggleEdit);
+            $('#exportBtn').addEventListener('click', exportAccounts);
+            $('#shareBtn').addEventListener('click', openShareModal);
+            $('#importBtn').addEventListener('click', () => {
+                $('#importFile').click();
+            });
+            $('#importFile').addEventListener('change', importAccounts);
+            $('#resetBtn').addEventListener('click', resetAccounts);
+            $('#reloadBtn').addEventListener('click', hardReloadApp);
+            $('#addBtn').addEventListener('click', () => {
+                $('#keySecret').value = generateRandomSecret();
+                $('#addModal').classList.add('open');
+            });
+            $('#regenSecret').addEventListener('click', () => {
+                $('#keySecret').value = generateRandomSecret();
+            });
+            $('#toggleFormPw').addEventListener('click', toggleFormPassword);
+
+            // Document-level touch handlers for drag-and-drop
+            if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+                document.addEventListener('touchmove', onTouchMove, { passive: false });
+                document.addEventListener('touchend', onTouchEnd);
+                document.addEventListener('touchcancel', onTouchEnd);
+            }
+            $('#addKeyCancel').addEventListener('click', closeModal);
+            $('#addKeyButton').addEventListener('click', onSave);
+            $('#addModal').addEventListener('click', e => {
+                if (e.target === $('#addModal')) {
+                    closeModal();
+                }
+            });
+
+            // QR modal
+            $('#qrClose').addEventListener('click', closeQR);
+            $('#qrModal').addEventListener('click', e => {
+                if (e.target === $('#qrModal')) {
+                    closeQR();
+                }
+            });
+
+            // Encryption UI
+            $('#lockScreenUnlock').addEventListener('click', () => {
+                openPasswordModal('unlock');
+            });
+            $('#lockBtn').addEventListener('click', onLockToggle);
+            $('#updatePwBtn').addEventListener('click', openSetPassword);
+            $('#passwordModal').addEventListener('click', e => {
+                if (e.target === $('#passwordModal')) {
+                    closePasswordModal();
+                }
+            });
+            $('#pwCancel').addEventListener('click', closePasswordModal);
+            $('#pwSubmit').addEventListener('click', onPasswordSubmit);
+            $('#pwInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    onPasswordSubmit();
+                }
+            });
+            $('#setPwModal').addEventListener('click', e => {
+                if (e.target === $('#setPwModal')) {
+                    closeSetPwModal();
+                }
+            });
+            $('#setPwCancel').addEventListener('click', closeSetPwModal);
+            $('#setPwSubmit').addEventListener('click', onSetPasswordSubmit);
+
+            // Share modal
+            $('#shareBtn').addEventListener('click', openShareModal);
+            $('#shareCancel').addEventListener('click', closeShareModal);
+            $('#shareGenerate').addEventListener('click', onShareGenerate);
+            $('#shareModal').addEventListener('click', e => {
+                if (e.target === $('#shareModal')) {
+                    closeShareModal();
+                }
+            });
+            $('#shareUrlOutput').addEventListener('click', copyShareUrl);
+            $('#sharePwInput').addEventListener('input', () => {
+                $('#shareGenerate').disabled = !$('#sharePwInput').value;
+            });
+
+            // Dark mode toggle
+            $('#themeBtn').addEventListener('click', toggleTheme);
+            applyTheme();
+
+            // Check encryption state
+            if (store.isEncrypted()) {
+                stopTicker();
+                showLockScreen();
+            } else {
+                if (!store.hasAnyData()) {
+                    await loadDefaultAccounts();
+                }
+                await render();
+                startTicker();
+            }
+
+            // Check for share URL on load
+            checkShareUrl();
+        };
+
+        const checkShareUrl = function () {
+            const hash = typeof window !== 'undefined' ? window.location.hash : '';
+            if (!hash || !hash.startsWith('#data=')) {
+                return;
+            }
+            const data = hash.substring(6);
+            if (store.isEncrypted()) {
+                sessionStorage.setItem('pendingShare', data);
+                showToast('Please unlock your vault first before importing accounts');
+                clearShareUrl();
+                return;
+            }
+            openImportPasswordModal(data);
+        };
+
+        let importDataContext = null;
+        let importAttemptCount = 0;
+
+        const openImportPasswordModal = function (data) {
+            importDataContext = data;
+            importAttemptCount = 0;
+            openPasswordModal('import');
+        };
+
+        const onPasswordSubmit = async function () {
+            const pw = $('#pwInput').value;
+            if (!pw) {
+                return;
+            }
+            const mode = passwordModalMode;
+
+            if (mode === 'unlock') {
+                const ok = await store.unlock(pw);
+                if (ok) {
+                    closePasswordModal();
+                    hideLockScreen();
+                    startTicker();
+                    await render();
+                    const pending = sessionStorage.getItem('pendingShare');
+                    if (pending) {
+                        sessionStorage.removeItem('pendingShare');
+                        openImportPasswordModal(pending);
+                    }
+                } else {
+                    $('#pwError').textContent = 'Incorrect password';
+                }
+            } else if (mode === 'import') {
+                try {
+                    const accounts = await store.decompressAndDecrypt(importDataContext, pw);
+                    const currentAccounts = (await store.getAccounts()) || [];
+                    const merged = mergeAccounts(currentAccounts, accounts);
+                    await store.saveAccounts(merged);
+                    clearShareUrl();
+                    closePasswordModal();
+                    importDataContext = null;
+                    showToast('Accounts imported successfully');
+                    await render();
+                } catch (e) {
+                    importAttemptCount++;
+                    if (importAttemptCount >= 3) {
+                        sessionStorage.removeItem('pendingShare');
+                        clearShareUrl();
+                        closePasswordModal();
+                        importDataContext = null;
+                        showToast('Too many failed attempts. Please request a new share URL.');
+                    } else {
+                        $('#pwError').textContent = 'Incorrect password (' + (3 - importAttemptCount) + ' attempts remaining)';
+                    }
+                }
+            } else if (mode === 'setPassword') {
+                if (store.isEncrypted() && !store.isUnlocked()) {
+                    const ok = await store.unlock(pw);
+                    if (!ok) {
+                        $('#pwError').textContent = 'Incorrect password';
+                        return;
+                    }
+                }
+                closePasswordModal();
+                openSetPassword();
+            }
+        };
+
+        const clearShareUrl = function () {
+            if (typeof window !== 'undefined' && typeof history !== 'undefined' && history.replaceState) {
+                history.replaceState(null, '', window.location.pathname);
+            }
+        };
+
+        const mergeAccounts = function (existing, incoming) {
+            // Use composite key (issuer + name + secret) to preserve duplicate secrets
+            const accountMap = new Map();
+            const getKey = (acc) => `${acc.issuer || ''}|${acc.name || ''}|${acc.secret}`;
+            for (const acc of existing) {
+                accountMap.set(getKey(acc), acc);
+            }
+            for (const acc of incoming) {
+                accountMap.set(getKey(acc), acc);
+            }
+            return Array.from(accountMap.values());
+        };
+
+        const openShareModal = function () {
+            $('#sharePwInput').value = '';
+            $('#shareUrlContainer').classList.add('hidden');
+            $('#shareGenerate').disabled = true;
+            $('#shareModal').classList.add('open');
+            $('#sharePwInput').focus();
+        };
+
+        const closeShareModal = function () {
+            $('#shareModal').classList.remove('open');
+        };
+
+        const onShareGenerate = async function () {
+            const pw = $('#sharePwInput').value;
+            if (!pw) {
+                return;
+            }
+            const accounts = (await store.getAccounts()) || [];
+            try {
+                const data = await store.compressAndEncrypt(accounts, pw);
+                const baseUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+                const url = baseUrl + '#data=' + data;
+                $('#shareUrlOutput').value = url;
+                $('#shareUrlContainer').classList.remove('hidden');
+            } catch (e) {
+                showToast('Failed to generate URL');
+            }
+        };
+
+        const copyShareUrl = function () {
+            const url = $('#shareUrlOutput').value;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('URL copied to clipboard');
+            }).catch(() => {
+                $('#shareUrlOutput').select();
+                document.execCommand('copy');
+                showToast('URL copied to clipboard');
+            });
+        };
+
+        // ---- Theme (auto-detect by local time: 08:00–22:00 = light) ----
+        let manualTheme = null; // manual override for current session
+
+        const getTimeBasedTheme = function () {
+            const hour = new Date().getHours();
+            return hour >= 8 && hour < 22 ? 'light' : 'dark';
+        };
+
+        const toggleTheme = function () {
+            const current =
+                document.documentElement.getAttribute('data-theme') || getTimeBasedTheme();
+            manualTheme = current === 'dark' ? 'light' : 'dark';
+            applyTheme();
+        };
+
+        const applyTheme = function () {
+            const theme = manualTheme || getTimeBasedTheme();
+            document.documentElement.setAttribute('data-theme', theme);
+            const btn = $('#themeBtn');
+            if (btn) {
+                btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+        };
+
+        // ---- Encryption UI ----
+        const clearSensitiveDom = function () {
+            renderToken++;
+            lastCodeStepByIndex = {};
+            const list = $('#accounts');
+            if (list) {
+                list.innerHTML = '';
+            }
+        };
+
+        const showLockScreen = function () {
+            stopTicker();
+            clearSensitiveDom();
+            $('#lockScreen').style.display = 'flex';
+            $('#accounts').style.display = 'none';
+            $('#addRow').style.display = 'none';
+            updateLockIcon();
+        };
+
+        const hideLockScreen = function () {
+            $('#lockScreen').style.display = 'none';
+            $('#accounts').style.display = '';
+            $('#addRow').style.display = editing ? '' : 'none';
+        };
+
+        const onLockToggle = function () {
+            if (store.isEncrypted() && store.isUnlocked()) {
+                // Lock it
+                store.lock();
+                showLockScreen();
+            } else if (!store.isEncrypted()) {
+                // Open set-password dialog
+                openSetPassword();
+            }
+        };
+
+        const updateLockIcon = function () {
+            const lockBtn = $('#lockBtn');
+            const updatePwBtn = $('#updatePwBtn');
+            if (!lockBtn || !updatePwBtn) {
+                return;
+            }
+            if (!editing) {
+                // Not in edit mode: show lock button if encrypted
+                updatePwBtn.classList.add('hidden');
+                if (store.isEncrypted()) {
+                    lockBtn.classList.remove('hidden');
+                    lockBtn.textContent = '🔓';
+                    lockBtn.title = 'Lock accounts';
+                } else {
+                    lockBtn.classList.add('hidden');
+                }
+                return;
+            }
+            // In edit mode: show update password button, hide lock button
+            updatePwBtn.classList.remove('hidden');
+            lockBtn.classList.add('hidden');
+        };
+
+        // Unlock modal
+        let passwordModalMode = ''; // 'unlock', 'import'
+
+        const openPasswordModal = function (action) {
+            passwordModalMode = action;
+            $('#pwInput').value = '';
+            $('#pwError').textContent = '';
+            if (action === 'unlock') {
+                $('#pwTitle').textContent = 'Unlock Accounts';
+                $('#pwSubmit').textContent = 'Unlock';
+            } else if (action === 'import') {
+                $('#pwTitle').textContent = 'Import Accounts';
+                $('#pwSubmit').textContent = 'Import';
+            }
+            $('#passwordModal').classList.add('open');
+            setTimeout(() => {
+                const modal = $('#passwordModal');
+                const active = document.activeElement;
+                if (modal && modal.classList.contains('open') && (!active || !modal.contains(active))) {
+                    $('#pwInput').focus();
+                }
+            }, 100);
+        };
+
+        const closePasswordModal = function () {
+            $('#passwordModal').classList.remove('open');
+            $('#pwInput').value = '';
+            $('#pwError').textContent = '';
+        };
+
+        // Set password modal
+        const openSetPassword = function () {
+            $('#setPwInput').value = '';
+            $('#setPwConfirm').value = '';
+            $('#setPwError').textContent = '';
+            if (store.isEncrypted()) {
+                $('#setPwTitle').textContent = 'Change Password';
+                $('#setPwHint').textContent = 'Leave empty to remove encryption.';
+            } else {
+                $('#setPwTitle').textContent = 'Set Encryption Password';
+                $('#setPwHint').textContent = 'Encrypts accounts in localStorage with AES-GCM.';
+            }
+            $('#setPwModal').classList.add('open');
+            setTimeout(() => {
+                const modal = $('#setPwModal');
+                const active = document.activeElement;
+                if (modal && modal.classList.contains('open') && (!active || !modal.contains(active))) {
+                    $('#setPwInput').focus();
+                }
+            }, 100);
+        };
+
+        const closeSetPwModal = function () {
+            $('#setPwModal').classList.remove('open');
+        };
+
+        const onSetPasswordSubmit = async function () {
+            const pw = $('#setPwInput').value;
+            const confirm = $('#setPwConfirm').value;
+            if (pw && pw !== confirm) {
+                $('#setPwError').textContent = 'Passwords do not match';
+                return;
+            }
+            try {
+                await store.setPassword(pw || null);
+                closeSetPwModal();
+                updateLockIcon();
+                await render();
+            } catch (e) {
+                $('#setPwError').textContent = 'Failed to set password: ' + e.message;
+            }
+        };
+
+        // ---- Drag and Drop ----
+        let dragFromIdx = -1;
+
+        const onDragStart = function (e) {
+            const card = e.target.closest('.account-card');
+            if (!card || !editing) {
+                return;
+            }
+            dragFromIdx = parseInt(card.getAttribute('data-idx'), 10);
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        };
+
+        const onDragOver = function (e) {
+            if (dragFromIdx < 0 || !editing) {
+                return;
+            }
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const card = e.target.closest('.account-card');
+            if (card) {
+                // Remove highlight from all
+                const cards = document.querySelectorAll('.account-card');
+                for (let i = 0; i < cards.length; i++) {
+                    cards[i].classList.remove('drag-over');
+                }
+                card.classList.add('drag-over');
+            }
+        };
+
+        const onDrop = async function (e) {
+            e.preventDefault();
+            const card = e.target.closest('.account-card');
+            if (!card || dragFromIdx < 0) {
+                return;
+            }
+            const toIdx = parseInt(card.getAttribute('data-idx'), 10);
+            if (dragFromIdx !== toIdx) {
+                const accounts = (await store.getAccounts()) || [];
+                const item = accounts.splice(dragFromIdx, 1)[0];
+                accounts.splice(toIdx, 0, item);
+                await store.saveAccounts(accounts);
+                await render();
+            }
+            cleanupDrag();
+        };
+
+        const onDragEnd = function () {
+            cleanupDrag();
+        };
+
+        const cleanupDrag = function () {
+            dragFromIdx = -1;
+            const cards = document.querySelectorAll('.account-card');
+            for (let i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('dragging', 'drag-over', 'touch-dragging', 'touch-drag-over');
+            }
+        };
+
+        
+        // ---- Touch-based Drag and Drop (for mobile) ----
+        let touchDragFromIdx = -1;
+        let touchClone = null;
+        let touchGhostOffsetX = 0;
+        let touchGhostOffsetY = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchDragActivated = false;
+        const TOUCH_DRAG_THRESHOLD = 10;
+
+        const onTouchStart = function (e) {
+            if (!editing) { return; }
+
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) { return; }
+
+            const card = e.target.closest('.account-card');
+            if (!card) { return; }
+
+            touchDragFromIdx = parseInt(card.getAttribute('data-idx'), 10);
+            const touch = e.touches[0];
+            const rect = card.getBoundingClientRect();
+
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchDragActivated = false;
+            touchClone = null;
+
+            touchGhostOffsetX = touch.clientX - rect.left;
+            touchGhostOffsetY = touch.clientY - rect.top;
+        };
+
+        const onTouchMove = function (e) {
+            if (touchDragFromIdx < 0) { return; }
+
+            const touch = e.touches[0];
+            const dx = Math.abs(touch.clientX - touchStartX);
+            const dy = Math.abs(touch.clientY - touchStartY);
+
+            if (!touchDragActivated) {
+                if (dx < TOUCH_DRAG_THRESHOLD && dy < TOUCH_DRAG_THRESHOLD) {
+                    return;
+                }
+                touchDragActivated = true;
+                e.preventDefault();
+
+                const card = document.querySelector(`.account-card[data-idx="${touchDragFromIdx}"]`);
+                if (!card) { return; }
+                const rect = card.getBoundingClientRect();
+
+                touchClone = card.cloneNode(true);
+                touchClone.style.position = 'fixed';
+                touchClone.style.top = '-1000px';
+                touchClone.style.left = '-1000px';
+                touchClone.style.width = rect.width + 'px';
+                touchClone.style.zIndex = '10000';
+                touchClone.style.pointerEvents = 'none';
+                touchClone.style.opacity = '0.85';
+                touchClone.style.transform = 'rotate(2deg) scale(1.02)';
+                touchClone.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+                document.body.appendChild(touchClone);
+
+                card.classList.add('touch-dragging');
+                return;
+            }
+
+            e.preventDefault();
+
+            if (touchClone) {
+                touchClone.style.left = (touch.clientX - touchGhostOffsetX) + 'px';
+                touchClone.style.top = (touch.clientY - touchGhostOffsetY) + 'px';
+            }
+
+            touchClone.style.display = 'none';
+            const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (touchClone) { touchClone.style.display = ''; }
+
+            const cardBelow = elBelow ? elBelow.closest('.account-card') : null;
+            const cards = document.querySelectorAll('.account-card');
+            for (let i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('touch-drag-over');
+            }
+            if (cardBelow && touchDragFromIdx >= 0) {
+                cardBelow.classList.add('touch-drag-over');
+            }
+        };
+
+        const onTouchEnd = async function (e) {
+            if (touchDragFromIdx < 0) { return; }
+
+            if (touchClone) {
+                document.body.removeChild(touchClone);
+                touchClone = null;
+            }
+
+            if (touchDragActivated) {
+                const touch = e.changedTouches[0];
+                const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                const cardBelow = elBelow ? elBelow.closest('.account-card') : null;
+
+                if (cardBelow) {
+                    const toIdx = parseInt(cardBelow.getAttribute('data-idx'), 10);
+                    if (touchDragFromIdx !== toIdx) {
+                        const accounts = (await store.getAccounts()) || [];
+                        const item = accounts.splice(touchDragFromIdx, 1)[0];
+                        accounts.splice(toIdx, 0, item);
+                        await store.saveAccounts(accounts);
+                        await render();
+                        return;
+                    }
+                }
+            }
+
+            cleanupDrag();
+            touchDragFromIdx = -1;
+            touchDragActivated = false;
+        };
+
+        // ---- Render ----
+        const render = async function () {
+            return renderAt(Math.round(Date.now() / 1000));
+        };
+
+        const renderAt = async function (now) {
+            const list = $('#accounts');
+            const token = ++renderToken;
+            const accounts = await store.getAccounts();
+            if (token !== renderToken) {
+                return;
+            }
+
+            list.innerHTML = '';
+            if (accounts === null) {
+                return;
+            } // locked
+            lastRenderedAt = now;
+            lastCodeStepByIndex = {};
+
+            for (let _i = 0; _i < accounts.length; _i++) {
+                const acc = accounts[_i];
+                const i = _i;
+                const algo = acc.algorithm || DEFAULTS.algorithm;
+                const period = acc.period || DEFAULTS.period;
+                const digits = acc.digits || DEFAULTS.digits;
+                const code = await keys.generate(acc.secret, {
+                    algorithm: algo,
+                    period: period,
+                    digits: digits
+                });
+                if (token !== renderToken) {
+                    return;
+                }
+                const cd = period - (now % period);
+
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                card.setAttribute('data-idx', i);
+                card.setAttribute('data-period', period);
+                lastCodeStepByIndex[i] = Math.floor(now / period);
+                if (editing) {
+                    card.setAttribute('draggable', 'true');
+                }
+
+                const displayName = acc.issuer
+                    ? `${escapeHtml(acc.issuer)}${acc.name ? ` (${escapeHtml(acc.name)})` : ''}`
+                    : escapeHtml(acc.name);
+                const nameHtml = acc.url
+                    ? `<a href="${escapeHtml(acc.url)}" target="_blank" rel="noopener noreferrer">${displayName}</a>`
+                    : displayName;
+
+                let actionsHtml = '<div class="card-actions">';
+                actionsHtml += `<button class="qr-btn" data-idx="${i}" title="Show QR code"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="20" y="14" width="2" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="18" width="4" height="4" rx="0.5"/><rect x="5" y="5" width="2" height="2"/><rect x="17" y="5" width="2" height="2"/><rect x="5" y="17" width="2" height="2"/></svg></button>`;
+                if (editing) {
+                    actionsHtml += '<button class="drag-handle" title="Drag to reorder">≡</button>';
+                    actionsHtml += `<button class="edit-btn" data-idx="${i}" title="Edit">&#x270E;</button>`;
+                    actionsHtml += `<button class="delete-btn" data-idx="${i}" title="Delete">&times;</button>`;
+                }
+                actionsHtml += '</div>';
+
+                // Password row (only if account has a password)
+                let pwRowHtml = '';
+                if (acc.password) {
+                    pwRowHtml =
+                        '<div class="password-row">' +
+                        '<div class="password-field">' +
+                        '<span class="password-label">Password</span>' +
+                        '<span class="password-display">' +
+                        '<span class="password-value">••••••••</span>' +
+                        '<span class="copy-tip">Copied!</span>' +
+                        '</span>' +
+                        '<button type="button" class="password-toggle" title="Show password" aria-label="Show password">' +
+                        '<svg class="pw-icon pw-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+                        '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
+                        '<circle cx="12" cy="12" r="3"/>' +
+                        '</svg>' +
+                        '<svg class="pw-icon pw-icon-hide hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+                        '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>' +
+                        '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>' +
+                        '<line x1="1" y1="1" x2="23" y2="23"/>' +
+                        '</svg>' +
+                        '</button>' +
+                        '</div>' +
+                        '</div>';
+                }
+
+                const urgentClass = cd <= 5 ? ' urgent' : '';
+
+                card.innerHTML =
+                    '<div class="account-info">' +
+                    '<div class="account-meta">' +
+                    `<span class="account-name">${nameHtml}</span>` +
+                    `<span class="meta-countdown${urgentClass}">${cd}s</span>` +
+                    '</div>' +
+                    `<div class="countdown-bar"><div class="countdown-bar-fill${urgentClass}"></div></div>` +
+                    `<div class="totp-code">${code}<span class="copy-tip">Copied!</span></div>` +
+                    pwRowHtml +
+                    '</div>' +
+                    actionsHtml;
+
+                const bar = card.querySelector('.countdown-bar-fill');
+                const nowMs = Date.now();
+                const elapsedMs = nowMs % (period * 1000);
+                const remainingMs = (period * 1000) - elapsedMs;
+                bar.style.transform = 'scaleX(' + Math.max(0, remainingMs / (period * 1000)) + ')';
+
+                const codeEl = card.querySelector('.totp-code');
+                codeEl.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    copyToClipboard(code, this);
+                });
+
+                // Password click-to-copy (secret kept in closure, not DOM attributes)
+                const accountPassword = acc.password;
+                const pwEl = card.querySelector('.password-display');
+                if (pwEl && accountPassword) {
+                    let pwVisible = false;
+                    const pwMask = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+                    const pwValueEl = pwEl.querySelector('.password-value');
+                    const pwToggle = card.querySelector('.password-toggle');
+                    const pwIconShow = pwToggle ? pwToggle.querySelector('.pw-icon-show') : null;
+                    const pwIconHide = pwToggle ? pwToggle.querySelector('.pw-icon-hide') : null;
+
+                    const setPasswordDisplay = function (visible) {
+                        pwVisible = visible;
+                        pwValueEl.textContent = visible ? accountPassword : pwMask;
+                        if (pwIconShow) {
+                            pwIconShow.classList.toggle('hidden', visible);
+                        }
+                        if (pwIconHide) {
+                            pwIconHide.classList.toggle('hidden', !visible);
+                        }
+                        if (pwToggle) {
+                            pwToggle.title = visible ? 'Hide password' : 'Show password';
+                            pwToggle.setAttribute('aria-label', pwToggle.title);
+                        }
+                    };
+
+                    pwEl.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        copyToClipboard(accountPassword, this);
+                    });
+
+                    if (pwToggle) {
+                        pwToggle.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPasswordDisplay(!pwVisible);
+                        });
+                    }
+                }
+
+                card.querySelector('.qr-btn').addEventListener('click', function () {
+                    showQR(parseInt(this.getAttribute('data-idx'), 10));
+                });
+
+                if (editing) {
+                    card.querySelector('.edit-btn').addEventListener('click', function () {
+                        openEdit(parseInt(this.getAttribute('data-idx'), 10));
+                    });
+                    card.querySelector('.delete-btn').addEventListener('click', function () {
+                        deleteAccount(parseInt(this.getAttribute('data-idx'), 10));
+                    });
+                    card.addEventListener('dragstart', onDragStart);
+                    card.addEventListener('dragover', onDragOver);
+                    card.addEventListener('drop', onDrop);
+                    card.addEventListener('dragend', onDragEnd);
+                    card.addEventListener('touchstart', onTouchStart, { passive: true });
+                }
+
+                list.appendChild(card);
+            }
+            updateLockIcon();
+        };
+
+        const toggleEdit = function () {
+            editing = !editing;
+            $('#editBtn').classList.toggle('active', editing);
+            $('#themeBtn').classList.toggle('hidden', !editing);
+            $('#lockBtn').classList.toggle('hidden', !editing);
+            $('#resetBtn').classList.toggle('hidden', !editing);
+            $('#reloadBtn').classList.toggle('hidden', !editing);
+            $('#importBtn').classList.toggle('hidden', !editing);
+            $('#exportBtn').classList.toggle('hidden', !editing);
+            $('#shareBtn').classList.toggle('hidden', !editing);
+            $('#addRow').style.display = editing ? '' : 'none';
+            updateLockIcon();
+            render();
+        };
+
+        const hardReloadApp = function () {
+            caches.keys().then(function (names) {
+                names.forEach(function (name) {
+                    caches.delete(name);
+                });
+            });
+            location.reload(true);
+        };
+
+        const buildOtpauth = function (acc) {
+            const algo = acc.algorithm || DEFAULTS.algorithm;
+            const period = acc.period || DEFAULTS.period;
+            const digits = acc.digits || DEFAULTS.digits;
+            const issuer = acc.issuer || '';
+            const label = issuer
+                ? `${encodeURIComponent(issuer)}:${encodeURIComponent(acc.name)}`
+                : encodeURIComponent(acc.name);
+            let params = `secret=${encodeURIComponent(acc.secret)}`;
+            if (issuer) {
+                params += `&issuer=${encodeURIComponent(issuer)}`;
+            }
+            params += `&algorithm=${algo.replace('SHA-', 'SHA').replace('-', '')}`;
+            params += `&digits=${digits}`;
+            params += `&period=${period}`;
+            return `otpauth://totp/${label}?${params}`;
+        };
+
+        const exportAccounts = async function () {
+            const accounts = (await store.getAccounts()) || [];
+            const full = accounts.map(acc => {
+                return {
+                    name: acc.name,
+                    issuer: acc.issuer || '',
+                    secret: acc.secret,
+                    algorithm: acc.algorithm || DEFAULTS.algorithm,
+                    period: acc.period || DEFAULTS.period,
+                    digits: acc.digits || DEFAULTS.digits,
+                    url: acc.url || '',
+                    otpauth: buildOtpauth(acc),
+                    password: acc.password || ''
+                };
+            });
+            const data = JSON.stringify(full, null, 2);
+            const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'authenticator-export.json';
+            a.click();
+        };
+
+        const importAccounts = function (e) {
+            const file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async function (ev) {
+                const text = ev.target.result;
+                let imported = 0;
+                try {
+                    let arr = JSON.parse(text);
+                    if (!Array.isArray(arr)) {
+                        arr = [arr];
+                    }
+                    for (let i = 0; i < arr.length; i++) {
+                        const item = arr[i];
+                        if (item.secret) {
+                            await addAccount(
+                                item.name || 'Imported',
+                                item.secret,
+                                item.algorithm || DEFAULTS.algorithm,
+                                item.period || DEFAULTS.period,
+                                item.digits || DEFAULTS.digits,
+                                item.url || '',
+                                item.issuer || '',
+                                item.password || ''
+                            );
+                            imported++;
+                        } else if (item.otpauth) {
+                            const parsed = parseOtpauth(item.otpauth);
+                            if (parsed) {
+                                await addAccount(
+                                    parsed.name,
+                                    parsed.secret,
+                                    parsed.algorithm,
+                                    parsed.period,
+                                    parsed.digits,
+                                    '',
+                                    parsed.issuer
+                                );
+                                imported++;
+                            }
+                        }
+                    }
+                } catch (ex) {
+                    const lines = text.split('\n');
+                    for (let j = 0; j < lines.length; j++) {
+                        const line = lines[j].trim();
+                        if (line.indexOf('otpauth://') === 0) {
+                            const parsed = parseOtpauth(line);
+                            if (parsed) {
+                                await addAccount(
+                                    parsed.name,
+                                    parsed.secret,
+                                    parsed.algorithm,
+                                    parsed.period,
+                                    parsed.digits,
+                                    '',
+                                    parsed.issuer
+                                );
+                                imported++;
+                            }
+                        }
+                    }
+                }
+                if (imported > 0) {
+                    showToast(`Imported ${imported} account${imported > 1 ? 's' : ''}.`);
+                } else {
+                    showToast('No valid accounts found in file.');
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        };
+
+        const deleteAccount = async function (idx) {
+            const accounts = (await store.getAccounts()) || [];
+            accounts.splice(idx, 1);
+            await store.saveAccounts(accounts);
+            render();
+        };
+
+        const resetAccounts = function () {
+            if (!confirm('Delete all accounts? This cannot be undone.')) {
+                return;
+            }
+            store.resetAll();
+            editing = false;
+            $('#editBtn').classList.remove('active');
+            $('#resetBtn').classList.add('hidden');
+            $('#reloadBtn').classList.add('hidden');
+            $('#exportBtn').classList.add('hidden');
+            $('#addRow').style.display = 'none';
+            updateLockIcon();
+            render();
+        };
+
+        const addAccount = async function (name, secret, algorithm, period, digits, url, issuer, password) {
+            if (!secret) {
+                return false;
+            }
+            const acc = {
+                name: name,
+                secret: secret,
+                algorithm: algorithm || DEFAULTS.algorithm,
+                period: period || DEFAULTS.period,
+                digits: digits || DEFAULTS.digits,
+                url: url || '',
+                issuer: issuer || '',
+                password: password || ''
+            };
+            const accounts = (await store.getAccounts()) || [];
+            accounts.push(acc);
+            await store.saveAccounts(accounts);
+            render();
+            return true;
+        };
+
+        const showQR = async function (idx) {
+            const accounts = (await store.getAccounts()) || [];
+            const acc = accounts[idx];
+            if (!acc) {
+                return;
+            }
+            const uri = buildOtpauth(acc);
+            $('#qrTitle').textContent = acc.issuer
+                ? `${acc.issuer}${acc.name ? ` (${acc.name})` : ''}`
+                : acc.name;
+            $('#qrUri').textContent = uri;
+
+            const qr = qrcode(0, 'M');
+            qr.addData(uri);
+            qr.make();
+
+            const canvas = $('#qrCanvas');
+            const size = 240;
+            const modules = qr.getModuleCount();
+            const cellSize = Math.floor(size / modules);
+            const realSize = cellSize * modules;
+            canvas.width = realSize;
+            canvas.height = realSize;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, realSize, realSize);
+            ctx.fillStyle = '#000';
+            for (let r = 0; r < modules; r++) {
+                for (let c = 0; c < modules; c++) {
+                    if (qr.isDark(r, c)) {
+                        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            $('#qrModal').classList.add('open');
+        };
+
+        const closeQR = function () {
+            $('#qrModal').classList.remove('open');
+        };
+
+        const openEdit = async function (idx) {
+            const accounts = (await store.getAccounts()) || [];
+            const acc = accounts[idx];
+            if (!acc) {
+                return;
+            }
+            editIndex = idx;
+            $('#modalTitle').textContent = 'Edit Account';
+            $('#addKeyButton').textContent = 'Save';
+            $('#keyIssuer').value = acc.issuer || '';
+            $('#keyAccount').value = acc.name || '';
+            $('#keySecret').value = acc.secret || '';
+            $('#keyUrl').value = acc.url || '';
+            $('#keyAlgorithm').value = acc.algorithm || DEFAULTS.algorithm;
+            $('#keyPeriod').value = acc.period || DEFAULTS.period;
+            $('#keyDigits').value = acc.digits || DEFAULTS.digits;
+            $('#keyPassword').value = acc.password || '';
+            $('#keyPassword').type = 'password';
+            $('#toggleFormPw').textContent = '\uD83D\uDC41';
+            $('#addModal').classList.add('open');
+        };
+
+        const onSave = async function () {
+            const issuer = $('#keyIssuer').value.trim();
+            const name = $('#keyAccount').value.trim();
+            const secret = $('#keySecret').value.replace(/\s/g, '');
+            const url = $('#keyUrl').value.trim();
+            const password = $('#keyPassword').value;
+            const algo = $('#keyAlgorithm').value;
+            const period = parseInt($('#keyPeriod').value, 10);
+            const digits = parseInt($('#keyDigits').value, 10);
+            if (!name) {
+                $('#keyAccount').focus();
+                return;
+            }
+            if (!secret) {
+                $('#keySecret').focus();
+                return;
+            }
+
+            if (editIndex >= 0) {
+                const accounts = (await store.getAccounts()) || [];
+                accounts[editIndex] = {
+                    name: name,
+                    secret: secret,
+                    algorithm: algo || DEFAULTS.algorithm,
+                    period: period || DEFAULTS.period,
+                    digits: digits || DEFAULTS.digits,
+                    url: url || '',
+                    issuer: issuer || '',
+                    password: password || ''
+                };
+                await store.saveAccounts(accounts);
+                render();
+            } else {
+                await addAccount(name, secret, algo, period, digits, url, issuer, password);
+            }
+            closeModal();
+        };
+
+        const closeModal = function () {
+            $('#addModal').classList.remove('open');
+            editIndex = -1;
+            $('#modalTitle').textContent = 'Add Account';
+            $('#addKeyButton').textContent = 'Add';
+            $('#keyIssuer').value = '';
+            $('#keyAccount').value = '';
+            $('#keySecret').value = '';
+            $('#keyUrl').value = '';
+            $('#keyAlgorithm').value = DEFAULTS.algorithm;
+            $('#keyPeriod').value = DEFAULTS.period;
+            $('#keyDigits').value = DEFAULTS.digits;
+            $('#keyPassword').value = '';
+            $('#keyPassword').type = 'password';
+            $('#toggleFormPw').textContent = '\uD83D\uDC41';
+        };
+
+        const toggleFormPassword = function () {
+            const pwInput = $('#keyPassword');
+            const toggleBtn = $('#toggleFormPw');
+            if (pwInput.type === 'password') {
+                pwInput.type = 'text';
+                toggleBtn.textContent = '\uD83D\uDDD8';
+            } else {
+                pwInput.type = 'password';
+                toggleBtn.textContent = '\uD83D\uDC41';
+            }
+        };
+
+        const tick = function () {
+            const now = Math.round(Date.now() / 1000);
+            if (now === lastRenderedAt) {
+                return;
+            }
+
+            const countdowns = document.querySelectorAll('.meta-countdown');
+            const codes = document.querySelectorAll('.totp-code');
+            let needsFullRender = false;
+
+            for (let i = 0; i < countdowns.length; i++) {
+                const card = countdowns[i].closest('.account-card');
+                if (!card) {
+                    continue;
+                }
+                const period = parseInt(card.getAttribute('data-period'), 10) || DEFAULTS.period;
+                const step = Math.floor(now / period);
+                const cd = period - (now % period);
+                const urgent = cd <= 5;
+                countdowns[i].textContent = `${cd}s`;
+                countdowns[i].classList.toggle('urgent', urgent);
+
+                if (lastCodeStepByIndex[i] !== step) {
+                    needsFullRender = true;
+                }
+            }
+
+            lastRenderedAt = now;
+            if (needsFullRender || codes.length !== countdowns.length) {
+                renderAt(now);
+            }
+        };
+
+        return { init: init, addAccount: addAccount, deleteAccount: deleteAccount };
+    };
+
+    exports.KeysController = KeysController;
+    exports.DEFAULTS = DEFAULTS;
+    exports.StorageService = StorageService;
+    exports.KeyUtilities = KeyUtilities;
+})(typeof exports === 'undefined' ? (this.totpAuth = {}) : exports);
