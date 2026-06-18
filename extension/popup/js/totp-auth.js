@@ -40,6 +40,15 @@
         }
         function setPlain(k, v) {
             localStorage.setItem(k, JSON.stringify(v));
+            // Sync to extension storage if available (for background badge)
+            try {
+                const _extStorage =
+                    (typeof chrome !== 'undefined' && chrome.storage) ||
+                    (typeof browser !== 'undefined' && browser.storage);
+                if (_extStorage && _extStorage.local) {
+                    _extStorage.local.set({ [k]: v });
+                }
+            } catch (_e) { /* extension storage not available */ }
         }
 
         function isEncrypted() {
