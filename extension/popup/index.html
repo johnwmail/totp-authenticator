@@ -59,7 +59,25 @@
                 --link-color: #4fc3f7;
                 --danger: #ef5350;
                 --danger-bg: rgba(239, 83, 80, 0.15);
+
                 --lock-bg: #1a1a2e;
+            }
+
+            .import-btn-wrapper {
+                position: relative;
+                display: inline-block;
+                width: auto;
+                height: auto;
+            }
+            .import-btn-wrapper .import-file-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+                font-size: 0;
             }
 
             * {
@@ -929,14 +947,24 @@
                 >
                     &#x21BB;
                 </button>
-                <button
-                    id="importBtn"
-                    class="hidden"
-                    title="Import accounts"
-                    aria-label="Import accounts"
-                >
-                    &#x21A5;
-                </button>
+                <div class="import-btn-wrapper" id="importBtnWrapper" style="display:none">
+                    <button
+                        id="importBtn"
+                        class=""
+                        title="Import accounts"
+                        aria-label="Import accounts"
+                        tabindex="-1"
+                    >
+                        &#x21A5;
+                    </button>
+                    <input
+                        type="file"
+                        id="importFile"
+                        accept=".json,.txt"
+                        class="import-file-overlay"
+                        aria-label="Import accounts file"
+                    />
+                </div>
                 <button
                     id="exportBtn"
                     class="hidden"
@@ -975,14 +1003,7 @@
             <button class="add-btn" id="addBtn" aria-label="Add new account">+ Add Account</button>
         </div>
 
-        <!-- Hidden file input for import -->
-        <input
-            type="file"
-            id="importFile"
-            accept=".json,.txt"
-            style="display: none"
-            aria-label="Import accounts file"
-        />
+
 
         <!-- QR code modal -->
         <div

@@ -651,9 +651,6 @@
             $('#editBtn').addEventListener('click', toggleEdit);
             $('#exportBtn').addEventListener('click', exportAccounts);
             $('#shareBtn').addEventListener('click', openShareModal);
-            $('#importBtn').addEventListener('click', () => {
-                $('#importFile').click();
-            });
             $('#importFile').addEventListener('change', importAccounts);
             $('#resetBtn').addEventListener('click', resetAccounts);
             $('#reloadBtn').addEventListener('click', hardReloadApp);
@@ -1406,7 +1403,7 @@
             $('#lockBtn').classList.toggle('hidden', !editing);
             $('#resetBtn').classList.toggle('hidden', !editing);
             $('#reloadBtn').classList.toggle('hidden', !editing);
-            $('#importBtn').classList.toggle('hidden', !editing);
+            $('#importBtnWrapper').style.display = editing ? '' : 'none';
             $('#exportBtn').classList.toggle('hidden', !editing);
             $('#shareBtn').classList.toggle('hidden', !editing);
             $('#addRow').style.display = editing ? '' : 'none';
@@ -1474,7 +1471,7 @@
                 const text = ev.target.result;
                 let imported = 0;
                 try {
-                    let arr = JSON.parse(text);
+                    let arr = JSON.parse(stripJsonComments(text));
                     if (!Array.isArray(arr)) {
                         arr = [arr];
                     }
