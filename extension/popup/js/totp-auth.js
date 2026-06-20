@@ -76,7 +76,7 @@
         }
 
         async function deriveKey(password, salt, iterations) {
-            iterations = iterations || 310000;
+            iterations = iterations || 600000;
             const enc = new TextEncoder();
             const baseKey = await crypto.subtle.importKey(
                 'raw',
@@ -116,7 +116,7 @@
             const jsonStr = JSON.stringify(data);
             const compressed = LZString.compressToUTF16(jsonStr);
             const salt = randomBytes(16);
-            const iterations = 310000;
+            const iterations = 600000;
             const key = await deriveKey(password, salt, iterations);
             const iv = randomBytes(12);
             const enc = new TextEncoder();
@@ -162,7 +162,7 @@
                 return;
             }
             const salt = randomBytes(16);
-            const iterations = 310000;
+            const iterations = 600000;
             aesKey = await deriveKey(password, salt, iterations);
             const meta = { salt: bufToBase64(salt), iter: iterations };
             localStorage.setItem(KEYS.meta, JSON.stringify(meta));
