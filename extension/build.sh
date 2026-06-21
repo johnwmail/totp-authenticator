@@ -30,7 +30,7 @@ cp -r "$SCRIPT_DIR/popup/js/app-init.js" "$CHROME_DIR/popup/js/"
 cp -r "$SCRIPT_DIR/popup/lib/"* "$CHROME_DIR/popup/lib/"
 cp -r "$SCRIPT_DIR/icons/"* "$CHROME_DIR/icons/"
 cp "$SCRIPT_DIR/background.js" "$CHROME_DIR/"
-cp "$SCRIPT_DIR/chrome-manifest.json" "$CHROME_DIR/manifest.json"
+cp "$SCRIPT_DIR/manifest.json" "$CHROME_DIR/manifest.json"
 
 # Create zip with manifest at root level for clean extraction
 cd "$CHROME_DIR"
@@ -40,7 +40,7 @@ echo "  -> $DIST_DIR/totp-authenticator-chrome.zip  ($(du -h "$DIST_DIR/totp-aut
 
 # Build Firefox
 echo ""
-echo "--- Firefox MV2 ---"
+echo "--- Firefox MV3 ---"
 FIREFOX_DIR="$DIST_DIR/firefox"
 mkdir -p "$FIREFOX_DIR/popup/js" "$FIREFOX_DIR/popup/lib" "$FIREFOX_DIR/icons"
 
@@ -51,7 +51,7 @@ cp -r "$SCRIPT_DIR/popup/js/app-init.js" "$FIREFOX_DIR/popup/js/"
 cp -r "$SCRIPT_DIR/popup/lib/"* "$FIREFOX_DIR/popup/lib/"
 cp -r "$SCRIPT_DIR/icons/"* "$FIREFOX_DIR/icons/"
 cp "$SCRIPT_DIR/background.js" "$FIREFOX_DIR/"
-cp "$SCRIPT_DIR/firefox-manifest.json" "$FIREFOX_DIR/manifest.json"
+cp "$SCRIPT_DIR/manifest.json" "$FIREFOX_DIR/manifest.json"
 
 # Create xpi (store-only compression — safest for Firefox)
 cd "$FIREFOX_DIR"

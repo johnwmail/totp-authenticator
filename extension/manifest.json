@@ -1,12 +1,12 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "TOTP Authenticator",
     "version": "1.0.0",
     "description": "A lightweight TOTP authenticator that runs entirely in your browser",
     "author": "TOTP Authenticator",
     "homepage_url": "https://github.com/johnwmail/totp-authenticator",
 
-    "browser_action": {
+    "action": {
         "default_popup": "popup/index.html",
         "default_title": "TOTP Authenticator",
         "default_icon": {
@@ -28,16 +28,20 @@
     ],
 
     "background": {
-        "scripts": ["background.js"],
-        "persistent": false
+        "service_worker": "background.js",
+        "type": "module"
     },
 
-    "content_security_policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'",
+    "content_security_policy": {
+        "extension_pages": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
+    },
+
+    "offline_enabled": true,
 
     "browser_specific_settings": {
         "gecko": {
             "id": "totp-authenticator@example.com",
-            "strict_min_version": "57.0"
+            "strict_min_version": "121.0"
         }
     }
 }
